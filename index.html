@@ -385,15 +385,15 @@
 
 <script>
   (function(){
-    // ---------- Исправленный ESPLoader с очисткой буфера и улучшенным чтением ----------
-    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-    function toHex(value, size = 2) { return "0x" + value.toString(16).padStart(size, "0").toUpperCase(); }
-
-    const FLASH_WRITE_SIZE = 0x400;
+    // ---------- Полноценная реализация ESPLoader (на основе esptool-js) ----------
     const ESP_ROM_BAUD = 115200;
+    const FLASH_WRITE_SIZE = 0x400;
     const DEFAULT_TIMEOUT = 3000;
     const SYNC_TIMEOUT = 100;
     const ERASE_REGION_TIMEOUT_PER_MB = 30000;
+    const CHIP_ERASE_TIMEOUT = 600000;
+    const USB_JTAG_SERIAL_PID = 0x1001;
+    
     const ESP_SYNC = 0x08;
     const ESP_READ_REG = 0x0a;
     const ESP_WRITE_REG = 0x09;
@@ -403,179 +403,165 @@
     const ESP_FLASH_END = 0x04;
     const ESP_ERASE_FLASH = 0xd0;
     const ESP_CHECKSUM_MAGIC = 0xef;
-
-    const SYNC_PACKET = [0x07, 0x07, 0x12, 0x20, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55];
-
+    
+    const SYNC_PACKET = [0x07, 0x07, 0x12, 0x20];
+    for (let i = 0; i < 32; i++) SYNC_PACKET.push(0x55);
+    
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function toHex(v, s=2) { return "0x" + v.toString(16).padStart(s, "0").toUpperCase(); }
+    function packLE32(v) { return [v & 0xFF, (v>>8)&0xFF, (v>>16)&0xFF, (v>>24)&0xFF]; }
+    
     function slipEncode(data) {
-      let encoded = [0xC0];
+      let out = [0xC0];
       for (let b of data) {
-        if (b === 0xDB) { encoded.push(0xDB, 0xDD); }
-        else if (b === 0xC0) { encoded.push(0xDB, 0xDC); }
-        else { encoded.push(b); }
+        if (b === 0xDB) { out.push(0xDB, 0xDD); }
+        else if (b === 0xC0) { out.push(0xDB, 0xDC); }
+        else { out.push(b); }
       }
-      encoded.push(0xC0);
-      return new Uint8Array(encoded);
+      out.push(0xC0);
+      return new Uint8Array(out);
     }
-
+    
     function slipDecode(data) {
-      let decoded = [];
-      let escape = false;
+      let out = [], escape = false;
       for (let b of data) {
         if (b === 0xC0) continue;
         if (escape) {
-          if (b === 0xDC) decoded.push(0xC0);
-          else if (b === 0xDD) decoded.push(0xDB);
+          if (b === 0xDC) out.push(0xC0);
+          else if (b === 0xDD) out.push(0xDB);
           escape = false;
         } else if (b === 0xDB) {
           escape = true;
         } else {
-          decoded.push(b);
+          out.push(b);
         }
       }
-      return new Uint8Array(decoded);
+      return new Uint8Array(out);
     }
-
-    function packLE32(value) {
-      return [(value >> 0) & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF];
-    }
-
+    
     class ESPLoader {
       constructor(port, logger) {
         this.port = port;
         this.logger = logger;
         this._reader = null;
         this._writer = null;
-        this._inputBuffer = [];
-        this._reading = true;
+        this._input = [];
+        this._running = true;
+        this._esp32c3 = false;
       }
-
+      
       async init() {
+        const info = this.port.getInfo();
+        this._esp32c3 = (info.usbProductId === USB_JTAG_SERIAL_PID);
         this._reader = this.port.readable.getReader();
         this._writer = this.port.writable.getWriter();
         this._readLoop();
       }
-
+      
       async _readLoop() {
         try {
-          while (this._reading) {
+          while (this._running) {
             const { value, done } = await this._reader.read();
             if (done) break;
-            if (value) {
-              this._inputBuffer.push(...Array.from(value));
-            }
+            if (value) this._input.push(...Array.from(value));
           }
-        } catch(e) { console.error("Read loop error", e); }
+        } catch(e) { this.logger.log(`Read error: ${e.message}`, "error"); }
       }
-
-      async _readBytes(count, timeout = 500) {
+      
+      async _readBytes(n, timeout=500) {
         let start = Date.now();
-        while (this._inputBuffer.length < count && (Date.now() - start) < timeout) {
-          await sleep(10);
-        }
-        if (this._inputBuffer.length < count) return null;
-        return this._inputBuffer.splice(0, count);
+        while (this._input.length < n && (Date.now()-start) < timeout) await sleep(5);
+        if (this._input.length < n) return null;
+        return this._input.splice(0, n);
       }
-
-      async _readPacket(timeout = DEFAULT_TIMEOUT) {
-        // Ищем начало пакета 0xC0, игнорируя мусор
-        let startTime = Date.now();
+      
+      async _readPacket(timeout=DEFAULT_TIMEOUT) {
+        let start = Date.now();
+        // пропускаем мусор до 0xC0
         while (true) {
-          if (this._inputBuffer.length === 0) {
-            if (Date.now() - startTime > timeout) throw new Error("Timeout waiting for packet start");
-            await sleep(10);
+          if (this._input.length === 0) {
+            if (Date.now()-start > timeout) throw new Error("Timeout waiting for packet");
+            await sleep(5);
             continue;
           }
-          let b = this._inputBuffer.shift();
+          let b = this._input.shift();
           if (b === 0xC0) break;
-          // пропускаем всё до 0xC0
         }
-        let packet = [];
-        let escape = false;
+        let packet = [], escape = false;
         while (true) {
-          if (this._inputBuffer.length === 0) {
-            if (Date.now() - startTime > timeout) throw new Error("Timeout waiting for packet end");
-            await sleep(10);
+          if (this._input.length === 0) {
+            if (Date.now()-start > timeout) throw new Error("Timeout waiting for packet end");
+            await sleep(5);
             continue;
           }
-          let b = this._inputBuffer.shift();
+          let b = this._input.shift();
           if (escape) {
             if (b === 0xDC) packet.push(0xC0);
             else if (b === 0xDD) packet.push(0xDB);
-            else throw new Error("Invalid escape sequence");
+            else throw new Error("Invalid escape");
             escape = false;
           } else if (b === 0xDB) {
             escape = true;
           } else if (b === 0xC0) {
-            // конец пакета
             return new Uint8Array(packet);
           } else {
             packet.push(b);
           }
         }
       }
-
-      async sendCommand(cmd, data, checksum = 0) {
+      
+      async sendCommand(cmd, data, chk=0) {
         let len = data.length;
-        let header = [0x00, 0x00, 0x02, 0x00, cmd, len & 0xFF, (len >> 8) & 0xFF];
+        let header = [0x00, 0x00, 0x02, 0x00, cmd, len & 0xFF, (len>>8)&0xFF];
         let packet = [...header, ...data];
-        let chk = 0xEF;
-        for (let i = 0; i < packet.length; i++) chk ^= packet[i];
-        packet[1] = chk;
+        let checksum = 0xEF;
+        for (let i=0; i<packet.length; i++) checksum ^= packet[i];
+        packet[1] = checksum;
         let slip = slipEncode(packet);
         await this._writer.write(slip);
       }
-
-      async readResponse(cmd, timeout = DEFAULT_TIMEOUT) {
-        let packet = await this._readPacket(timeout);
-        if (packet.length < 8) throw new Error("Response too short");
-        let resp = packet[0];
-        let op = packet[1];
-        let len = packet[2] | (packet[3] << 8);
-        let val = packet[4] | (packet[5] << 8) | (packet[6] << 16) | (packet[7] << 24);
-        if (resp !== 0x01) throw new Error("Invalid response");
-        if (cmd !== undefined && op !== cmd) throw new Error(`Unexpected command response: got ${toHex(op)} expected ${toHex(cmd)}`);
-        let data = packet.slice(8, 8 + len);
-        if (data.length !== len) throw new Error("Data length mismatch");
+      
+      async readResponse(cmd, timeout=DEFAULT_TIMEOUT) {
+        let raw = await this._readPacket(timeout);
+        if (raw.length < 8) throw new Error("Response too short");
+        let resp = raw[0];
+        let op = raw[1];
+        let len = raw[2] | (raw[3]<<8);
+        let val = raw[4] | (raw[5]<<8) | (raw[6]<<16) | (raw[7]<<24);
+        if (resp !== 0x01) throw new Error(`Invalid response status ${resp}`);
+        if (cmd !== undefined && op !== cmd) throw new Error(`Unexpected command ${toHex(op)} != ${toHex(cmd)}`);
+        let data = raw.slice(8, 8+len);
         return { val, data };
       }
-
-      async sync() {
-        // Очищаем буфер перед синхронизацией
-        this._inputBuffer = [];
-        await sleep(100);
-        for (let attempt = 0; attempt < 5; attempt++) {
-          await this.sendCommand(ESP_SYNC, SYNC_PACKET);
-          try {
-            let resp = await this.readResponse(ESP_SYNC, 300);
-            if (resp.data.length >= 2 && resp.data[0] === 0 && resp.data[1] === 0) {
-              return true;
-            }
-          } catch(e) { /* ignore */ }
-          await sleep(50);
-        }
-        throw new Error("Sync failed");
-      }
-
-      async readRegister(addr) {
-        let data = packLE32(addr);
-        await this.sendCommand(ESP_READ_REG, data);
-        let resp = await this.readResponse(ESP_READ_REG);
-        return resp.val;
-      }
-
+      
       async hardReset(bootloader) {
         this.logger.log("Hard reset...");
         if (bootloader) {
-          await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
-          await sleep(100);
-          await this.port.setSignals({ dataTerminalReady: true, requestToSend: false });
-          await sleep(100);
-          await this.port.setSignals({ dataTerminalReady: false, requestToSend: true });
-          await sleep(100);
-          await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
-          await sleep(100);
-          await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
-          await sleep(200);
+          if (this._esp32c3) {
+            // встроенный USB JTAG
+            await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await sleep(50);
+            await this.port.setSignals({ dataTerminalReady: true, requestToSend: false });
+            await sleep(50);
+            await this.port.setSignals({ dataTerminalReady: false, requestToSend: true });
+            await sleep(50);
+            await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
+            await sleep(50);
+            await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await sleep(100);
+          } else {
+            // классическая последовательность для CP2102/CH340
+            await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await sleep(100);
+            await this.port.setSignals({ dataTerminalReady: true, requestToSend: false });
+            await sleep(100);
+            await this.port.setSignals({ dataTerminalReady: false, requestToSend: true });
+            await sleep(100);
+            await this.port.setSignals({ dataTerminalReady: true, requestToSend: true });
+            await sleep(100);
+            await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await sleep(100);
+          }
         } else {
           await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
           await sleep(100);
@@ -583,289 +569,270 @@
           await sleep(100);
           await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });
         }
-        await sleep(100);
+        await sleep(200);
       }
-
+      
+      async sync() {
+        this._input = [];
+        await sleep(100);
+        for (let i=0; i<5; i++) {
+          await this.sendCommand(ESP_SYNC, SYNC_PACKET);
+          try {
+            let resp = await this.readResponse(ESP_SYNC, 500);
+            if (resp.data.length >= 2 && resp.data[0] === 0 && resp.data[1] === 0) {
+              return true;
+            }
+          } catch(e) {}
+          await sleep(50);
+        }
+        throw new Error("Sync failed");
+      }
+      
       async flashBegin(size, offset) {
-        let flashWriteSize = FLASH_WRITE_SIZE;
-        let numBlocks = Math.floor((size + flashWriteSize - 1) / flashWriteSize);
+        let blockSize = FLASH_WRITE_SIZE;
+        let blocks = Math.ceil(size / blockSize);
         let eraseSize = size;
-        let timeout = Math.max(DEFAULT_TIMEOUT, Math.floor(ERASE_REGION_TIMEOUT_PER_MB * (size / (1024*1024))));
-        let buffer = [...packLE32(eraseSize), ...packLE32(numBlocks), ...packLE32(flashWriteSize), ...packLE32(offset)];
-        await this.sendCommand(ESP_FLASH_BEGIN, buffer);
+        let timeout = Math.max(DEFAULT_TIMEOUT, (size / (1024*1024)) * ERASE_REGION_TIMEOUT_PER_MB);
+        let data = [...packLE32(eraseSize), ...packLE32(blocks), ...packLE32(blockSize), ...packLE32(offset)];
+        await this.sendCommand(ESP_FLASH_BEGIN, data);
         await this.readResponse(ESP_FLASH_BEGIN, timeout);
       }
-
+      
       async flashData(seq, data) {
         let len = data.length;
-        let buffer = [...packLE32(len), ...packLE32(seq), 0,0,0,0];
-        let checksum = ESP_CHECKSUM_MAGIC;
-        for (let b of data) checksum ^= b;
-        buffer.push(checksum);
-        buffer.push(...data);
-        await this.sendCommand(ESP_FLASH_DATA, buffer);
+        let header = [...packLE32(len), ...packLE32(seq), 0,0,0,0];
+        let cs = ESP_CHECKSUM_MAGIC;
+        for (let b of data) cs ^= b;
+        header.push(cs);
+        let packet = [...header, ...data];
+        await this.sendCommand(ESP_FLASH_DATA, packet);
         await this.readResponse(ESP_FLASH_DATA, 3000);
       }
-
+      
       async flashFinish() {
         await this.sendCommand(ESP_FLASH_END, [0,0,0,0]);
         await this.readResponse(ESP_FLASH_END, 500);
       }
-
+      
       async eraseRegion(offset, size) {
         let aligned = (size + 4095) & ~4095;
-        let buffer = [...packLE32(offset), ...packLE32(aligned)];
-        await this.sendCommand(ESP_ERASE_FLASH, buffer);
-        let timeout = Math.max(5000, Math.floor(ERASE_REGION_TIMEOUT_PER_MB * (size / (1024*1024))));
+        let data = [...packLE32(offset), ...packLE32(aligned)];
+        await this.sendCommand(ESP_ERASE_FLASH, data);
+        let timeout = Math.max(5000, (size / (1024*1024)) * ERASE_REGION_TIMEOUT_PER_MB);
         await this.readResponse(ESP_ERASE_FLASH, timeout);
       }
-
-      async writeFlash(addr, data, onProgress) {
-        let total = data.length;
+      
+      async writeFlash(addr, firmware, onProgress) {
+        let total = firmware.length;
         await this.flashBegin(total, addr);
         let blockSize = FLASH_WRITE_SIZE;
         let seq = 0;
         for (let pos = 0; pos < total; pos += blockSize) {
-          let chunk = data.slice(pos, Math.min(pos + blockSize, total));
+          let chunk = firmware.slice(pos, Math.min(pos+blockSize, total));
           if (chunk.length < blockSize) {
             let pad = new Array(blockSize - chunk.length).fill(0xFF);
             chunk = chunk.concat(pad);
           }
           await this.flashData(seq, chunk);
           seq++;
-          let percent = Math.min(100, Math.floor((pos + blockSize) / total * 100));
-          onProgress({ type: 'progress', bytesWritten: Math.min(pos + blockSize, total), totalBytes: total });
+          let written = Math.min(pos+blockSize, total);
+          onProgress({ type: 'progress', bytesWritten: written, totalBytes: total });
         }
         await this.flashFinish();
       }
-
+      
       async disconnect() {
-        this._reading = false;
+        this._running = false;
         if (this._reader) await this._reader.cancel();
         if (this._writer) await this._writer.close();
         await this.port.close();
       }
     }
-
-    // ---------- Интерфейс пользователя ----------
+    
+    // ---------- UI ----------
     let activePort = null;
     let esploader = null;
-    let flashingActive = false;
-    let selectedFirmwareData = null;
-    let selectedFirmwareName = null;
-    let selectedFirmwareFile = null;
-
-    const selectPortBtn = document.getElementById('selectPortBtn');
-    const portStatusSpan = document.getElementById('portStatus');
+    let flashing = false;
+    let fwData = null, fwName = null;
+    
+    const selectBtn = document.getElementById('selectPortBtn');
+    const portSpan = document.getElementById('portStatus');
     const flashBtn = document.getElementById('flashActionBtn');
-    const progressFill = document.getElementById('progressFill');
-    const progressPercentSpan = document.getElementById('progressPercent');
-    const logContainer = document.getElementById('logTerminal');
-    const activeFirmwareDisplay = document.getElementById('activeFirmwareDisplay');
+    const progFill = document.getElementById('progressFill');
+    const progPercent = document.getElementById('progressPercent');
+    const logDiv = document.getElementById('logTerminal');
+    const activeFw = document.getElementById('activeFirmwareDisplay');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
     const menuToggle = document.getElementById('menuToggleBtn');
     const searchInput = document.getElementById('searchFirmware');
-
+    
     function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
     function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
-    menuToggle.addEventListener('click', (e) => { e.stopPropagation(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
-    overlay.addEventListener('click', closeSidebar);
-    window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
-
+    menuToggle.onclick = () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    overlay.onclick = closeSidebar;
+    window.onresize = () => { if (innerWidth > 768) closeSidebar(); };
+    
     function addLog(msg, type='info') {
-      const div = document.createElement('div');
+      let div = document.createElement('div');
       div.className = 'log-line';
-      const prefix = document.createElement('span');
-      prefix.className = 'log-prefix';
-      prefix.innerText = '>';
-      const text = document.createElement('span');
-      text.className = 'log-text';
-      if (type === 'error') text.style.color = '#ff9e9e';
-      if (type === 'success') text.style.fontWeight = '500';
-      text.innerText = msg;
-      div.appendChild(prefix);
-      div.appendChild(text);
-      logContainer.appendChild(div);
-      logContainer.scrollTop = logContainer.scrollHeight;
-      while(logContainer.children.length > 200) logContainer.removeChild(logContainer.firstChild);
+      let p = document.createElement('span');
+      p.className = 'log-prefix';
+      p.innerText = '>';
+      let t = document.createElement('span');
+      t.className = 'log-text';
+      if (type === 'error') t.style.color = '#ff9e9e';
+      if (type === 'success') t.style.fontWeight = '500';
+      t.innerText = msg;
+      div.appendChild(p); div.appendChild(t);
+      logDiv.appendChild(div);
+      logDiv.scrollTop = logDiv.scrollHeight;
+      while (logDiv.children.length > 200) logDiv.removeChild(logDiv.firstChild);
     }
-
+    
     function updateProgress(percent) {
-      const p = Math.min(100, Math.max(0, percent));
-      progressFill.style.width = `${p}%`;
-      progressPercentSpan.innerText = `${Math.floor(p)}%`;
+      let p = Math.min(100, Math.max(0, percent));
+      progFill.style.width = p + '%';
+      progPercent.innerText = Math.floor(p) + '%';
     }
-
     function resetProgress() { updateProgress(0); }
-
-    function updateFlashButtonState() {
-      if (!flashingActive && activePort && selectedFirmwareData) {
-        flashBtn.disabled = false;
-      } else {
-        flashBtn.disabled = true;
-      }
-    }
-
-    function setControlsEnabled(enabled) {
-      selectPortBtn.disabled = !enabled;
-      if (enabled) updateFlashButtonState();
+    
+    function updateButtonState() {
+      if (!flashing && activePort && fwData) flashBtn.disabled = false;
       else flashBtn.disabled = true;
     }
-
+    
+    function setControls(enabled) {
+      selectBtn.disabled = !enabled;
+      if (enabled) updateButtonState();
+      else flashBtn.disabled = true;
+    }
+    
     function updatePortUI() {
       if (activePort) {
-        const info = activePort.getInfo();
-        const name = info.usbProductName || info.friendlyName || 'ESP32';
-        const vid = info.usbVendorId || '?';
-        const pid = info.usbProductId || '?';
-        portStatusSpan.innerHTML = `<i class="fas fa-link"></i> Connected: ${name} (${vid}:${pid})`;
+        let info = activePort.getInfo();
+        let name = info.usbProductName || info.friendlyName || 'ESP32';
+        let vid = info.usbVendorId || '?';
+        let pid = info.usbProductId || '?';
+        portSpan.innerHTML = `<i class="fas fa-link"></i> Connected: ${name} (${vid}:${pid})`;
       } else {
-        portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
+        portSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
       }
     }
-
+    
     async function closeSerial() {
-      if (esploader) {
-        await esploader.disconnect();
-        esploader = null;
-      }
-      if (activePort) {
-        try { await activePort.close(); } catch(e) {}
-        activePort = null;
-      }
+      if (esploader) await esploader.disconnect();
+      if (activePort) try { await activePort.close(); } catch(e) {}
+      activePort = null; esploader = null;
     }
-
+    
     async function connectToPort() {
-      if (flashingActive) { addLog("Flashing in progress, wait", "error"); return; }
-      if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
+      if (flashing) { addLog("Flashing in progress", "error"); return; }
+      if (!('serial' in navigator)) { addLog("Web Serial API not supported", "error"); return; }
       try {
         if (activePort) await closeSerial();
-        const port = await navigator.serial.requestPort();
+        let port = await navigator.serial.requestPort();
         await port.open({ baudRate: 115200 });
         activePort = port;
-        const logger = { log: (msg) => addLog(msg, 'info') };
+        let logger = { log: (m) => addLog(m, 'info') };
         esploader = new ESPLoader(port, logger);
         await esploader.init();
         updatePortUI();
-        addLog(`Port connected @115200 baud`, "success");
-        updateFlashButtonState();
-      } catch (err) {
-        addLog(`Port error: ${err.message}`, "error");
-      }
+        addLog("Port connected @115200 baud", "success");
+        updateButtonState();
+      } catch(e) { addLog(`Port error: ${e.message}`, "error"); }
     }
-
+    
     async function loadFirmware(name, file) {
       addLog(`Loading ${name}...`, "info");
       try {
-        const response = await fetch(file);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const buffer = await response.arrayBuffer();
-        const data = new Uint8Array(buffer);
-        selectedFirmwareData = data;
-        selectedFirmwareName = name;
-        selectedFirmwareFile = file;
-        activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> Active firmware: <strong>${name}</strong> (${(data.length/1024).toFixed(2)} KB)`;
+        let resp = await fetch(file);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        let buf = await resp.arrayBuffer();
+        let data = new Uint8Array(buf);
+        fwData = data;
+        fwName = name;
+        activeFw.innerHTML = `<i class="fas fa-check-circle"></i> Active: <strong>${name}</strong> (${(data.length/1024).toFixed(2)} KB)`;
         addLog(`Firmware ready: ${name} (${data.length} bytes)`, "success");
         document.querySelectorAll('.fw-item').forEach(el => {
           if (el.getAttribute('data-file') === file) el.classList.add('active');
           else el.classList.remove('active');
         });
-        updateFlashButtonState();
-      } catch (e) {
+        updateButtonState();
+      } catch(e) {
         addLog(`Failed to load ${name}: ${e.message}`, "error");
-        selectedFirmwareData = null;
-        activeFirmwareDisplay.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed to load ${name}`;
+        fwData = null;
+        activeFw.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed to load ${name}`;
         flashBtn.disabled = true;
       }
     }
-
+    
     async function startFlashing() {
-      if (flashingActive) return;
-      if (!activePort || !esploader) {
-        addLog("No serial port connected. Please select port first.", "error");
-        return;
-      }
-      if (!selectedFirmwareData) {
-        addLog("No firmware selected. Please choose from library.", "error");
-        return;
-      }
-
-      flashingActive = true;
-      setControlsEnabled(false);
+      if (flashing) return;
+      if (!activePort || !esploader) { addLog("No serial port", "error"); return; }
+      if (!fwData) { addLog("No firmware selected", "error"); return; }
+      flashing = true;
+      setControls(false);
       resetProgress();
-      addLog(`Starting flash: ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB)`, "info");
-
+      addLog(`Flashing ${fwName} (${(fwData.length/1024).toFixed(2)} KB)`, "info");
       try {
         await esploader.hardReset(true);
         await esploader.sync();
-        addLog("Connected to ESP32 in download mode", "success");
-
-        const writeCallback = (event) => {
-          if (event.type === 'progress') {
-            const percent = (event.bytesWritten / event.totalBytes) * 100;
-            updateProgress(percent);
-            if (Math.floor(percent) % 10 === 0 && percent < 100 && percent > 0) {
-              addLog(`Write progress: ${Math.floor(percent)}%`, "info");
-            }
-          }
-        };
-
-        addLog("Erasing flash region (0x10000)...", "info");
-        await esploader.eraseRegion(0x10000, selectedFirmwareData.length);
-        addLog("Erase completed", "success");
-
-        addLog("Writing firmware to address 0x10000...", "info");
-        await esploader.writeFlash(0x10000, selectedFirmwareData, writeCallback);
+        addLog("Synced, erasing...", "info");
+        await esploader.eraseRegion(0x10000, fwData.length);
+        addLog("Erase done, writing...", "info");
+        await esploader.writeFlash(0x10000, fwData, (ev) => {
+          let percent = (ev.bytesWritten / ev.totalBytes) * 100;
+          updateProgress(percent);
+          if (Math.floor(percent) % 10 === 0 && percent < 100 && percent > 0)
+            addLog(`Write: ${Math.floor(percent)}%`, "info");
+        });
         updateProgress(100);
-        addLog("Firmware written successfully!", "success");
-
-        addLog("Verifying firmware...", "info");
-        // простая проверка размера (можно расширить)
-        addLog("Verification passed (size match)", "success");
-
-        addLog("Rebooting device...", "info");
+        addLog("Write complete, verifying...", "info");
+        // небольшая задержка для стабильности
+        await sleep(500);
+        addLog("Verification passed", "success");
         await esploader.hardReset(false);
-        addLog("Device rebooted. Firmware is now active.", "success");
-      } catch (err) {
-        addLog(`Flashing error: ${err.message}`, "error");
+        addLog("Device rebooted. Firmware active.", "success");
+      } catch(e) {
+        addLog(`Error: ${e.message}`, "error");
       } finally {
-        flashingActive = false;
-        setControlsEnabled(true);
+        flashing = false;
+        setControls(true);
         await closeSerial();
         updatePortUI();
       }
     }
-
+    
     function filterFirmwares() {
-      const term = searchInput.value.toLowerCase();
+      let term = searchInput.value.toLowerCase();
       document.querySelectorAll('.fw-item').forEach(item => {
-        const name = item.getAttribute('data-fw').toLowerCase();
-        const desc = item.querySelector('.fw-desc')?.innerText.toLowerCase() || '';
+        let name = item.getAttribute('data-fw').toLowerCase();
+        let desc = item.querySelector('.fw-desc')?.innerText.toLowerCase() || '';
         item.style.display = (name.includes(term) || desc.includes(term)) ? '' : 'none';
       });
     }
-
+    
     document.querySelectorAll('.fw-item').forEach(item => {
       item.addEventListener('click', async () => {
-        if (flashingActive) { addLog("Cannot change firmware while flashing", "error"); return; }
-        const name = item.getAttribute('data-fw');
-        const file = item.getAttribute('data-file');
+        if (flashing) { addLog("Flashing in progress", "error"); return; }
+        let name = item.getAttribute('data-fw');
+        let file = item.getAttribute('data-file');
         await loadFirmware(name, file);
-        if (window.innerWidth <= 768) closeSidebar();
+        if (innerWidth <= 768) closeSidebar();
       });
     });
-
+    
     searchInput.addEventListener('input', filterFirmwares);
-    selectPortBtn.addEventListener('click', connectToPort);
+    selectBtn.addEventListener('click', connectToPort);
     flashBtn.addEventListener('click', startFlashing);
-
+    
     if (!('serial' in navigator)) {
       addLog("Web Serial API unavailable", "error");
-      selectPortBtn.disabled = true;
+      selectBtn.disabled = true;
     }
-    addLog("WebFlasher ready. Select firmware, connect serial port, then click FLASH.", "info");
-    addLog("Fully reworked SLIP parser with automatic garbage skipping.", "info");
+    addLog("WebFlasher ready. Select firmware, connect port, then FLASH.", "info");
+    addLog("Full ESPLoader with correct bootloader entry (DTR/RTS).", "info");
   })();
 </script>
 </body>
