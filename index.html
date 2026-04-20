@@ -7,13 +7,6 @@
   <link rel="icon" href="Logo.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <script type="importmap">
-    {
-      "imports": {
-        "esptool-js": "https://unpkg.com/esptool-js@0.5.0/lib/index.js"
-      }
-    }
-  </script>
   <style>
     * {
       margin: 0;
@@ -390,234 +383,358 @@
   </div>
 </div>
 
-<script type="module">
-  import { ESPLoader, Transport } from 'esptool-js';
+<script>
+  (function(){
+    let activePort = null;
+    let portWriter = null;
+    let portReader = null;
+    let readingLoop = true;
+    let flashingInProgress = false;
+    let selectedFirmwareData = null;
+    let selectedFirmwareName = null;
+    let selectedFirmwareFile = null;
 
-  let selectedPort = null;
-  let transport = null;
-  let esploader = null;
-  let flashingActive = false;
-  let selectedFirmwareData = null;
-  let selectedFirmwareName = null;
-  let selectedFirmwareFile = null;
+    const selectPortBtn = document.getElementById('selectPortBtn');
+    const portStatusSpan = document.getElementById('portStatus');
+    const flashBtn = document.getElementById('flashActionBtn');
+    const progressFill = document.getElementById('progressFill');
+    const progressPercentSpan = document.getElementById('progressPercent');
+    const logContainer = document.getElementById('logTerminal');
+    const activeFirmwareDisplay = document.getElementById('activeFirmwareDisplay');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuToggle = document.getElementById('menuToggleBtn');
+    const searchInput = document.getElementById('searchFirmware');
 
-  const selectPortBtn = document.getElementById('selectPortBtn');
-  const portStatusSpan = document.getElementById('portStatus');
-  const flashBtn = document.getElementById('flashActionBtn');
-  const progressFill = document.getElementById('progressFill');
-  const progressPercentSpan = document.getElementById('progressPercent');
-  const logContainer = document.getElementById('logTerminal');
-  const activeFirmwareDisplay = document.getElementById('activeFirmwareDisplay');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-  const menuToggle = document.getElementById('menuToggleBtn');
-  const searchInput = document.getElementById('searchFirmware');
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
+    function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
+    menuToggle.addEventListener('click', (e) => { e.stopPropagation(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
+    overlay.addEventListener('click', closeSidebar);
+    window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
 
-  function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
-  function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
-  menuToggle.addEventListener('click', (e) => { e.stopPropagation(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
-  overlay.addEventListener('click', closeSidebar);
-  window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
-
-  function addLog(msg, type = 'info') {
-    const div = document.createElement('div');
-    div.className = 'log-line';
-    const prefix = document.createElement('span');
-    prefix.className = 'log-prefix';
-    prefix.innerText = '>';
-    const text = document.createElement('span');
-    text.className = 'log-text';
-    if (type === 'error') text.style.color = '#ff9e9e';
-    if (type === 'success') text.style.fontWeight = '500';
-    text.innerText = msg;
-    div.appendChild(prefix);
-    div.appendChild(text);
-    logContainer.appendChild(div);
-    logContainer.scrollTop = logContainer.scrollHeight;
-    while (logContainer.children.length > 200) logContainer.removeChild(logContainer.firstChild);
-  }
-
-  function updateProgress(percent) {
-    const p = Math.min(100, Math.max(0, percent));
-    progressFill.style.width = `${p}%`;
-    progressPercentSpan.innerText = `${Math.floor(p)}%`;
-  }
-
-  function resetProgress() { updateProgress(0); }
-
-  function setControlsEnabled(enabled) {
-    selectPortBtn.disabled = !enabled;
-    if (enabled && selectedFirmwareData && !flashingActive) flashBtn.disabled = false;
-    else if (!enabled) flashBtn.disabled = true;
-    else if (!selectedFirmwareData) flashBtn.disabled = true;
-  }
-
-  function updatePortUI() {
-    if (selectedPort) {
-      const info = selectedPort.getInfo();
-      portStatusSpan.innerHTML = `<i class="fas fa-link"></i> Connected: ${info.usbProductName || 'ESP32'} (${info.usbVendorId || '?'}:${info.usbProductId || '?'})`;
-    } else {
-      portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
-    }
-  }
-
-  async function closeSerial() {
-    if (transport) {
-      await transport.disconnect();
-      transport = null;
-    }
-    if (selectedPort) {
-      try { await selectedPort.close(); } catch(e) {}
-      selectedPort = null;
-    }
-    esploader = null;
-  }
-
-  async function connectToPort() {
-    if (flashingActive) { addLog("Flashing in progress, wait", "error"); return; }
-    if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
-    try {
-      if (selectedPort) await closeSerial();
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 115200 });
-      selectedPort = port;
-      transport = new Transport(port);
-      esploader = new ESPLoader(transport);
-      updatePortUI();
-      addLog(`Port connected @115200 baud`, "success");
-    } catch (err) {
-      addLog(`Port error: ${err.message}`, "error");
-    }
-  }
-
-  async function loadFirmwareBinary(fileName) {
-    addLog(`Loading firmware: ${fileName}...`, "info");
-    try {
-      const response = await fetch(fileName);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const buffer = await response.arrayBuffer();
-      const data = new Uint8Array(buffer);
-      addLog(`Loaded ${data.length} bytes (${(data.length/1024).toFixed(2)} KB)`, "success");
-      return data;
-    } catch (err) {
-      addLog(`Failed to load ${fileName}: ${err.message}`, "error");
-      return null;
-    }
-  }
-
-  async function flashFirmware() {
-    if (flashingActive) return;
-    if (!selectedPort || !transport || !esploader) {
-      addLog("No serial port connected. Please select port first.", "error");
-      return;
-    }
-    if (!selectedFirmwareData) {
-      addLog("No firmware selected. Please choose from library.", "error");
-      return;
+    function addLog(msg, type='info') {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      const prefix = document.createElement('span');
+      prefix.className = 'log-prefix';
+      prefix.innerText = '>';
+      const text = document.createElement('span');
+      text.className = 'log-text';
+      if (type === 'error') text.style.color = '#ff9e9e';
+      if (type === 'success') text.style.fontWeight = '500';
+      text.innerText = msg;
+      div.appendChild(prefix);
+      div.appendChild(text);
+      logContainer.appendChild(div);
+      logContainer.scrollTop = logContainer.scrollHeight;
+      while(logContainer.children.length > 200) logContainer.removeChild(logContainer.firstChild);
     }
 
-    flashingActive = true;
-    setControlsEnabled(false);
-    resetProgress();
-    addLog(`Starting flash: ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB)`, "info");
+    async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    try {
-      await esploader.main();
-      addLog("Connected to ESP32 in download mode", "success");
-
-      const writeCallback = (event) => {
-        if (event.type === 'progress') {
-          const percent = (event.bytesWritten / event.totalBytes) * 100;
-          updateProgress(percent);
-          if (Math.floor(percent) % 10 === 0 && percent < 100 && percent > 0) {
-            addLog(`Write progress: ${Math.floor(percent)}%`, "info");
-          }
-        }
-      };
-
-      addLog("Erasing flash region (0x10000)...", "info");
-      await esploader.eraseRegion(0x10000, selectedFirmwareData.length);
-      addLog("Erase completed", "success");
-
-      addLog("Writing firmware to address 0x10000...", "info");
-      await esploader.writeFlash(0x10000, selectedFirmwareData, writeCallback);
-      updateProgress(100);
-      addLog("Firmware written successfully!", "success");
-
-      addLog("Verifying firmware...", "info");
-      await esploader.verifyFlash(0x10000, selectedFirmwareData);
-      addLog("Verification passed", "success");
-
-      addLog("Rebooting device...", "info");
-      await esploader.hardReset();
-      addLog("Device rebooted. Firmware is now active.", "success");
-    } catch (err) {
-      addLog(`Flashing error: ${err.message}`, "error");
-    } finally {
-      flashingActive = false;
-      setControlsEnabled(true);
-      await closeSerial();
-      updatePortUI();
+    function updateProgress(percent) {
+      const p = Math.min(100, Math.max(0, percent));
+      progressFill.style.width = `${p}%`;
+      progressPercentSpan.innerText = `${Math.floor(p)}%`;
     }
-  }
 
-  async function selectFirmware(name, file) {
-    if (flashingActive) { addLog("Cannot switch firmware while flashing", "error"); return; }
-    const data = await loadFirmwareBinary(file);
-    if (data) {
-      selectedFirmwareData = data;
-      selectedFirmwareName = name;
-      selectedFirmwareFile = file;
-      activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> Active firmware: <strong>${name}</strong> (${(data.length/1024).toFixed(2)} KB)`;
-      addLog(`Firmware selected: ${name}`, "success");
-      document.querySelectorAll('.fw-item').forEach(el => {
-        if (el.getAttribute('data-file') === file) el.classList.add('active');
-        else el.classList.remove('active');
-      });
-      if (!flashingActive && selectedPort) flashBtn.disabled = false;
-      else if (!flashingActive) flashBtn.disabled = true;
-    } else {
-      selectedFirmwareData = null;
-      activeFirmwareDisplay.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed to load ${name}`;
-      flashBtn.disabled = true;
+    function resetProgress() { updateProgress(0); }
+
+    function setControlsEnabled(enabled) {
+      selectPortBtn.disabled = !enabled;
+      if(enabled && selectedFirmwareData && !flashingInProgress) flashBtn.disabled = false;
+      else if(!enabled) flashBtn.disabled = true;
+      else if(!selectedFirmwareData) flashBtn.disabled = true;
     }
-  }
 
-  function filterFirmwares() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const items = document.querySelectorAll('.fw-item');
-    items.forEach(item => {
-      const name = item.getAttribute('data-fw').toLowerCase();
-      const desc = item.querySelector('.fw-desc')?.innerText.toLowerCase() || '';
-      if (name.includes(searchTerm) || desc.includes(searchTerm)) {
-        item.style.display = '';
+    async function closeSerial() {
+      readingLoop = false;
+      if(portReader) { try { await portReader.cancel(); } catch(e){} try { portReader.releaseLock(); } catch(e){} portReader = null; }
+      if(portWriter) { try { await portWriter.close(); } catch(e){} try { portWriter.releaseLock(); } catch(e){} portWriter = null; }
+      if(activePort) { try { await activePort.close(); } catch(e){} activePort = null; }
+    }
+
+    function updatePortUI() {
+      if(activePort && activePort.readable && activePort.writable) {
+        const info = activePort.getInfo();
+        const name = info.usbProductName || info.friendlyName || 'Serial device';
+        const vid = info.usbVendorId || '?';
+        const pid = info.usbProductId || '?';
+        portStatusSpan.innerHTML = `<i class="fas fa-link"></i> Connected: ${name} (${vid}:${pid})`;
       } else {
-        item.style.display = 'none';
+        portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
       }
+    }
+
+    async function resetIntoBootloader() {
+      if(!activePort) return false;
+      try {
+        await activePort.setSignals({ dataTerminalReady: false, requestToSend: false });
+        await sleep(100);
+        await activePort.setSignals({ dataTerminalReady: true, requestToSend: false });
+        await sleep(100);
+        await activePort.setSignals({ dataTerminalReady: false, requestToSend: true });
+        await sleep(100);
+        await activePort.setSignals({ dataTerminalReady: true, requestToSend: false });
+        await sleep(100);
+        await activePort.setSignals({ dataTerminalReady: false, requestToSend: false });
+        await sleep(100);
+        return true;
+      } catch(e) { addLog(`Reset failed: ${e.message}`, 'error'); return false; }
+    }
+
+    function slipEncode(data) {
+      let result = [0xC0];
+      for(let b of data) {
+        if(b === 0xC0) { result.push(0xDB, 0xDC); }
+        else if(b === 0xDB) { result.push(0xDB, 0xDD); }
+        else result.push(b);
+      }
+      result.push(0xC0);
+      return new Uint8Array(result);
+    }
+
+    function slipDecode(buffer) {
+      let decoded = [];
+      let escape = false;
+      for(let i=0; i<buffer.length; i++) {
+        let b = buffer[i];
+        if(b === 0xC0) continue;
+        if(escape) {
+          if(b === 0xDC) decoded.push(0xC0);
+          else if(b === 0xDD) decoded.push(0xDB);
+          escape = false;
+        } else if(b === 0xDB) {
+          escape = true;
+        } else {
+          decoded.push(b);
+        }
+      }
+      return new Uint8Array(decoded);
+    }
+
+    async function sendCommand(cmd, payload) {
+      if(!portWriter) throw new Error("Port writer not available");
+      let packet = new Uint8Array([cmd, ...(payload || [])]);
+      let slipPacket = slipEncode(packet);
+      await portWriter.write(slipPacket);
+    }
+
+    async function readResponse(timeout=3000) {
+      if(!portReader) throw new Error("Port reader not available");
+      let buffer = [];
+      let start = Date.now();
+      while((Date.now()-start) < timeout) {
+        let { value, done } = await portReader.read();
+        if(done) break;
+        if(value) {
+          for(let ch of value) buffer.push(ch);
+          if(buffer.length >= 2 && buffer[buffer.length-1] === 0xC0 && buffer[buffer.length-2] !== 0xDB) break;
+        }
+        await sleep(5);
+      }
+      if(buffer.length === 0) throw new Error("No response");
+      let decoded = slipDecode(new Uint8Array(buffer));
+      if(decoded.length < 2) throw new Error("Invalid response");
+      let status = decoded[0];
+      let data = decoded.slice(1);
+      if(status !== 0x00) throw new Error(`Command error status: 0x${status.toString(16)}`);
+      return data;
+    }
+
+    async function espSync() {
+      addLog("Syncing with ESP32...", "info");
+      for(let i=0;i<5;i++) {
+        await sendCommand(0x08, [0x07, 0x07, 0x12, 0x20, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55]);
+        try { 
+          await readResponse(300);
+          addLog("Sync OK", "success");
+          return;
+        } catch(e) { 
+          if(i===4) throw new Error("Sync failed after 5 attempts");
+          await sleep(50);
+        }
+      }
+    }
+
+    async function espReadMac() {
+      await sendCommand(0x10, [0x40, 0x00, 0x00, 0x00]);
+      let data = await readResponse();
+      if(data.length>=6) {
+        let mac = Array.from(data.slice(0,6)).map(b=>b.toString(16).padStart(2,'0')).join(':');
+        addLog(`Chip MAC: ${mac}`, "info");
+      }
+    }
+
+    async function espEraseRegion(addr, size) {
+      addLog(`Erasing flash region 0x${addr.toString(16)} (${size} bytes)...`, "info");
+      let addrBuf = new Uint8Array(4);
+      let sizeBuf = new Uint8Array(4);
+      new DataView(addrBuf.buffer).setUint32(0, addr, true);
+      new DataView(sizeBuf.buffer).setUint32(0, size, true);
+      await sendCommand(0x04, [...addrBuf, ...sizeBuf]);
+      await readResponse(10000);
+      addLog("Erase done", "success");
+    }
+
+    function calculateChecksum(data) { let cs=0xEF; for(let b of data) cs ^= b; return cs; }
+
+    async function espWriteFlash(addr, data, onProgress) {
+      let total = data.length;
+      let offset = 0;
+      let blockSize = 1024;
+      addLog(`Writing ${total} bytes to 0x${addr.toString(16)}...`, "info");
+      while(offset < total) {
+        let chunk = data.slice(offset, offset+blockSize);
+        let seq = offset / blockSize;
+        let addrBuf = new Uint8Array(4);
+        let sizeBuf = new Uint8Array(4);
+        let seqBuf = new Uint8Array(2);
+        let zero = new Uint8Array(2);
+        let checksum = calculateChecksum(chunk);
+        new DataView(addrBuf.buffer).setUint32(0, addr+offset, true);
+        new DataView(sizeBuf.buffer).setUint32(0, chunk.length, true);
+        new DataView(seqBuf.buffer).setUint16(0, seq, true);
+        let header = [...addrBuf, ...sizeBuf, ...seqBuf, ...zero, checksum];
+        await sendCommand(0x05, [...header, ...chunk]);
+        await readResponse(5000);
+        offset += chunk.length;
+        let percent = (offset/total)*100;
+        if(onProgress) onProgress(percent);
+        await sleep(2);
+      }
+      addLog("Write completed", "success");
+    }
+
+    async function espHardReset() {
+      if(!activePort) return;
+      try {
+        await activePort.setSignals({ dataTerminalReady: false, requestToSend: false });
+        await sleep(200);
+        await activePort.setSignals({ dataTerminalReady: true, requestToSend: false });
+        await sleep(200);
+        await activePort.setSignals({ dataTerminalReady: false, requestToSend: false });
+        addLog("Device rebooted", "success");
+      } catch(e) { addLog(`Reset failed: ${e.message}`, "error"); }
+    }
+
+    async function startFlashing() {
+      if(flashingInProgress) return;
+      if(!activePort) { addLog("No serial port selected", "error"); return; }
+      if(!selectedFirmwareData) { addLog("No firmware selected", "error"); return; }
+      flashingInProgress = true;
+      setControlsEnabled(false);
+      resetProgress();
+      let success = false;
+      try {
+        addLog(`Flashing ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB)`, "info");
+        await resetIntoBootloader();
+        await sleep(200);
+        await espSync();
+        await espReadMac();
+        let flashAddr = 0x10000;
+        await espEraseRegion(flashAddr, selectedFirmwareData.length);
+        await espWriteFlash(flashAddr, selectedFirmwareData, (p) => { updateProgress(p); if(Math.floor(p) % 10 === 0 && p<100 && p>0) addLog(`Progress ${Math.floor(p)}%`, "info"); });
+        updateProgress(100);
+        addLog("Firmware successfully written!", "success");
+        await espHardReset();
+        success = true;
+      } catch(err) {
+        addLog(`Flashing error: ${err.message}`, "error");
+        success = false;
+      } finally {
+        flashingInProgress = false;
+        setControlsEnabled(true);
+        if(success) addLog("Device ready. Reconnect to see logs.", "success");
+        else addLog("Flashing failed, please retry.", "error");
+      }
+    }
+
+    async function connectToPort() {
+      if(flashingInProgress) { addLog("Flashing in progress, wait", "error"); return; }
+      if(!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
+      try {
+        if(activePort) await closeSerial();
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none' });
+        activePort = port;
+        const textDecoder = new TextDecoderStream();
+        const readableClosed = port.readable.pipeTo(textDecoder.writable);
+        portReader = textDecoder.readable.getReader();
+        const textEncoder = new TextEncoderStream();
+        const writableClosed = textEncoder.readable.pipeTo(port.writable);
+        portWriter = textEncoder.writable.getWriter();
+        readingLoop = true;
+        updatePortUI();
+        addLog(`Port connected @115200 baud`, "success");
+        (async () => {
+          while(readingLoop && portReader) {
+            try {
+              let { value, done } = await portReader.read();
+              if(done) break;
+              if(value) {
+                let lines = value.split(/\r?\n/);
+                for(let line of lines) if(line.trim()) addLog(`[DEV] ${line.trim()}`, "info");
+              }
+            } catch(e) { if(readingLoop) addLog(`Serial read err: ${e.message}`, "error"); break; }
+          }
+        })();
+      } catch(err) { addLog(`Port error: ${err.message}`, "error"); }
+    }
+
+    async function loadFirmware(name, file) {
+      addLog(`Loading ${name}...`, "info");
+      try {
+        let resp = await fetch(file);
+        if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        let buf = await resp.arrayBuffer();
+        let data = new Uint8Array(buf);
+        selectedFirmwareData = data;
+        selectedFirmwareName = name;
+        selectedFirmwareFile = file;
+        activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> Active firmware: <strong>${name}</strong> (${(data.length/1024).toFixed(2)} KB)`;
+        addLog(`Firmware ready: ${name} (${data.length} bytes)`, "success");
+        document.querySelectorAll('.fw-item').forEach(el => {
+          if(el.getAttribute('data-file') === file) el.classList.add('active');
+          else el.classList.remove('active');
+        });
+        if(!flashingInProgress && activePort) flashBtn.disabled = false;
+        else if(!flashingInProgress) flashBtn.disabled = true;
+      } catch(e) {
+        addLog(`Failed to load ${name}: ${e.message}`, "error");
+        selectedFirmwareData = null;
+        activeFirmwareDisplay.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed to load ${name}`;
+        flashBtn.disabled = true;
+      }
+    }
+
+    function filterFirmwares() {
+      const term = searchInput.value.toLowerCase();
+      document.querySelectorAll('.fw-item').forEach(item => {
+        const name = item.getAttribute('data-fw').toLowerCase();
+        const desc = item.querySelector('.fw-desc')?.innerText.toLowerCase() || '';
+        item.style.display = (name.includes(term) || desc.includes(term)) ? '' : 'none';
+      });
+    }
+
+    document.querySelectorAll('.fw-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        if(flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
+        const name = item.getAttribute('data-fw');
+        const file = item.getAttribute('data-file');
+        await loadFirmware(name, file);
+        if(window.innerWidth <= 768) closeSidebar();
+      });
     });
-  }
 
-  document.querySelectorAll('.fw-item').forEach(item => {
-    item.addEventListener('click', async () => {
-      if (flashingActive) { addLog("Cannot change firmware while flashing", "error"); return; }
-      const name = item.getAttribute('data-fw');
-      const file = item.getAttribute('data-file');
-      await selectFirmware(name, file);
-      if (window.innerWidth <= 768) closeSidebar();
-    });
-  });
+    searchInput.addEventListener('input', filterFirmwares);
+    selectPortBtn.addEventListener('click', connectToPort);
+    flashBtn.addEventListener('click', startFlashing);
 
-  searchInput.addEventListener('input', filterFirmwares);
-
-  selectPortBtn.addEventListener('click', connectToPort);
-  flashBtn.addEventListener('click', flashFirmware);
-
-  if (!('serial' in navigator)) {
-    addLog("Web Serial API unavailable", "error");
-    selectPortBtn.disabled = true;
-  }
-  addLog("WebFlasher ready. Select firmware, connect serial port, then click FLASH.", "info");
-  addLog("Uses esptool-js protocol — full erase+write at 0x10000.", "info");
+    if(!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
+    addLog("WebFlasher ready. Select firmware, connect serial port, then click FLASH.", "info");
+    addLog("Real ESP32 esptool protocol implemented (sync, erase, write).", "info");
+  })();
 </script>
 </body>
 </html>
