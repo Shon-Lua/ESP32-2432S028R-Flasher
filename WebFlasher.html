@@ -1,1 +1,657 @@
-soon
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>WebFlasher | Professional Firmware Tool</title>
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #000000;
+      font-family: 'Inter', sans-serif;
+      color: #ffffff;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* strict, minimal container */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 2rem 3rem;
+    }
+
+    /* headers & typography */
+    h1, h2, h3 {
+      font-weight: 500;
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #ffffff;
+      padding-left: 1rem;
+      font-weight: 500;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    /* strict cards, dark surfaces */
+    .card {
+      background: #0a0a0a;
+      border: 1px solid #222222;
+      border-radius: 0px;    /* strict, sharp but with subtle edges */
+      transition: all 0.2s ease;
+    }
+
+    .flasher-card {
+      background: #0c0c0c;
+      padding: 2rem;
+      margin-bottom: 3rem;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+    }
+
+    /* buttons base — white icons & white text, dark bg with white border */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      background: transparent;
+      border: 1.5px solid #ffffff;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.8rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      letter-spacing: 0.3px;
+      background-color: transparent;
+      backdrop-filter: blur(0px);
+      border-radius: 0px;
+    }
+
+    .btn i {
+      font-size: 1rem;
+      color: #ffffff;
+      transition: color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+    }
+
+    .btn:hover i {
+      color: #000000;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      background: transparent;
+      border-color: #ffffff;
+      color: #ffffff;
+    }
+    .btn:disabled i {
+      color: #ffffff;
+    }
+    .btn:disabled:hover {
+      background: transparent;
+      color: #ffffff;
+    }
+    .btn:disabled:hover i {
+      color: #ffffff;
+    }
+
+    /* secondary / file button style */
+    .btn-outline-light {
+      border: 1px solid #3a3a3a;
+      background: #111111;
+      color: #ffffff;
+    }
+    .btn-outline-light i {
+      color: #ffffff;
+    }
+    .btn-outline-light:hover {
+      background: #2a2a2a;
+      border-color: #ffffff;
+      color: #ffffff;
+    }
+    .btn-outline-light:hover i {
+      color: #ffffff;
+    }
+
+    /* file selection row */
+    .file-selector {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+      background: #050505;
+      padding: 0.8rem 1rem;
+      border-left: 3px solid #2c2c2c;
+    }
+    .file-info {
+      font-size: 0.85rem;
+      font-family: 'Inter', monospace;
+      background: #0f0f0f;
+      padding: 0.4rem 1rem;
+      border: 1px solid #2a2a2a;
+      letter-spacing: 0.2px;
+      color: #dddddd;
+      flex: 1;
+      word-break: break-all;
+    }
+    .file-info i {
+      margin-right: 8px;
+      color: #ffffff;
+    }
+
+    /* progress section */
+    .progress-section {
+      margin: 1.8rem 0 1.5rem;
+    }
+    .progress-bar-container {
+      background: #1c1c1c;
+      height: 6px;
+      width: 100%;
+      margin: 0.5rem 0 0.5rem;
+    }
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background-color: #ffffff;
+      transition: width 0.25s ease-out;
+    }
+    .progress-percent {
+      text-align: right;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      color: #bbbbbb;
+      margin-top: 6px;
+    }
+
+    /* log terminal - strict monospace */
+    .log-terminal {
+      background: #030303;
+      border: 1px solid #252525;
+      padding: 1.2rem;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.8rem;
+      margin-top: 1.8rem;
+      max-height: 180px;
+      overflow-y: auto;
+      color: #e0e0e0;
+    }
+    .log-line {
+      padding: 0.2rem 0;
+      border-bottom: 1px dotted #1e1e1e;
+      font-weight: 400;
+      display: flex;
+      gap: 0.75rem;
+    }
+    .log-prefix {
+      color: #9e9e9e;
+      user-select: none;
+    }
+    .log-text {
+      color: #f5f5f5;
+    }
+    .log-text.success {
+      color: #ffffff;
+      font-weight: 500;
+    }
+    .log-text.error {
+      color: #ff9e9e;
+    }
+
+    /* features grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+    .feature-item {
+      background: #0b0b0b;
+      border: 1px solid #262626;
+      padding: 1.6rem 1.4rem;
+      transition: border 0.2s;
+    }
+    .feature-item i {
+      font-size: 2rem;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+    .feature-item h4 {
+      font-size: 1.2rem;
+      margin-bottom: 0.6rem;
+      font-weight: 500;
+    }
+    .feature-item p {
+      font-size: 0.85rem;
+      color: #b0b0b0;
+      line-height: 1.4;
+    }
+    .feature-item:hover {
+      border-color: #4a4a4a;
+    }
+
+    /* header & footer */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      margin-bottom: 3rem;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 1.5rem;
+    }
+    .logo h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .tagline {
+      color: #9a9a9a;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+    .badge {
+      font-size: 0.7rem;
+      border: 1px solid #3a3a3a;
+      padding: 0.2rem 0.7rem;
+      letter-spacing: 0.5px;
+    }
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid #1f1f1f;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6b6b6b;
+    }
+
+    /* utility */
+    .mt-2 {
+      margin-top: 0.5rem;
+    }
+    button {
+      background: none;
+      border: none;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 0px;
+    }
+    @media (max-width: 720px) {
+      .container {
+        padding: 1.5rem;
+      }
+      .flasher-card {
+        padding: 1.5rem;
+      }
+      .btn {
+        padding: 0.6rem 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">
+      <h1>WEBFLASHER</h1>
+      <div class="tagline">industrial-grade firmware tool</div>
+    </div>
+    <div class="badge"><i class="fas fa-shield-alt" style="margin-right: 6px;"></i> secure channel</div>
+  </div>
+
+  <!-- Main Flasher Card - strict & black -->
+  <div class="card flasher-card">
+    <h3><i class="fas fa-microchip" style="margin-right: 10px;"></i> Flash programmer</h3>
+    <div class="file-selector">
+      <button id="customSelectBtn" class="btn btn-outline-light" style="border-color: #3a3a3a;"><i class="fas fa-folder-open"></i> Select firmware</button>
+      <span id="fileDisplay" class="file-info"><i class="fas fa-file-code"></i> No file selected</span>
+      <input type="file" id="firmwareInput" accept=".bin,.hex,.fw,.img" style="display: none;">
+    </div>
+
+    <button id="flashActionBtn" class="btn"><i class="fas fa-bolt"></i> FLASH FIRMWARE</button>
+
+    <div class="progress-section">
+      <div class="progress-bar-container">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-percent" id="progressPercent">0%</div>
+    </div>
+
+    <div class="log-terminal" id="logTerminal">
+      <div class="log-line"><span class="log-prefix">></span><span class="log-text">System ready — awaiting device handshake</span></div>
+      <div class="log-line"><span class="log-prefix">></span><span class="log-text">WebFlasher core v2.1.0 idle</span></div>
+    </div>
+  </div>
+
+  <!-- Features section: strict, minimal but informative -->
+  <h2><i class="fas fa-cog" style="margin-right: 12px;"></i> Core capabilities</h2>
+  <div class="features-grid">
+    <div class="feature-item">
+      <i class="fas fa-bolt"></i>
+      <h4>Lightning protocol</h4>
+      <p>Optimized DMA transfers, low-latency flashing up to 2MB/s on modern targets.</p>
+    </div>
+    <div class="feature-item">
+      <i class="fas fa-lock"></i>
+      <h4>Secure digest</h4>
+      <p>End-to-end checksum verification & cryptographic signing for production firmware.</p>
+    </div>
+    <div class="feature-item">
+      <i class="fas fa-globe"></i>
+      <h4>Cross-platform</h4>
+      <p>WebUSB, WebSerial, and legacy DFU support — works on Win/Linux/macOS.</p>
+    </div>
+    <div class="feature-item">
+      <i class="fas fa-chart-line"></i>
+      <h4>Real-time logging</h4>
+      <p>Streamed debug output & granular flash status with strict timing analysis.</p>
+    </div>
+  </div>
+  <footer>
+    <span>© 2025 WebFlasher — professional embedded solutions</span>
+  </footer>
+</div>
+
+<script>
+  // DOM elements
+  const fileInput = document.getElementById('firmwareInput');
+  const selectBtn = document.getElementById('customSelectBtn');
+  const fileDisplaySpan = document.getElementById('fileDisplay');
+  const flashBtn = document.getElementById('flashActionBtn');
+  const progressFill = document.getElementById('progressFill');
+  const progressPercentSpan = document.getElementById('progressPercent');
+  const logContainer = document.getElementById('logTerminal');
+
+  // state
+  let selectedFile = null;
+  let flashingActive = false;
+  let currentStepTimeouts = [];
+  let flashAbortFlag = false;
+
+  // Helper: add log message (strict & monochrome)
+  function addLogMessage(message, type = 'info') {
+    const logDiv = document.createElement('div');
+    logDiv.className = 'log-line';
+    const prefixSpan = document.createElement('span');
+    prefixSpan.className = 'log-prefix';
+    prefixSpan.innerText = '>';
+    const textSpan = document.createElement('span');
+    textSpan.className = 'log-text';
+    if (type === 'error') textSpan.classList.add('error');
+    if (type === 'success') textSpan.classList.add('success');
+    textSpan.innerText = message;
+    logDiv.appendChild(prefixSpan);
+    logDiv.appendChild(textSpan);
+    logContainer.appendChild(logDiv);
+    // auto-scroll to bottom
+    logContainer.scrollTop = logContainer.scrollHeight;
+    // keep last 60 lines but not necessary, clean UI
+    while (logContainer.children.length > 120) {
+      logContainer.removeChild(logContainer.firstChild);
+    }
+  }
+
+  // Clear previous timeouts
+  function clearAllFlashTimeouts() {
+    for (let t of currentStepTimeouts) {
+      clearTimeout(t);
+    }
+    currentStepTimeouts = [];
+  }
+
+  // Reset progress UI
+  function resetProgressUI() {
+    progressFill.style.width = '0%';
+    progressPercentSpan.innerText = '0%';
+  }
+
+  // Enable/disable flash controls (file select + flash button)
+  function setControlsEnabled(enabled) {
+    if (enabled) {
+      flashBtn.disabled = false;
+      selectBtn.disabled = false;
+      fileInput.disabled = false;
+    } else {
+      flashBtn.disabled = true;
+      selectBtn.disabled = true;
+      fileInput.disabled = true;
+    }
+  }
+
+  // finalize flashing (success or abort cleanup)
+  function finalizeFlash(success = true, customMessage = null) {
+    if (!flashingActive) return;
+    flashingActive = false;
+    clearAllFlashTimeouts();
+    setControlsEnabled(true);
+    if (customMessage) {
+      addLogMessage(customMessage, success ? 'success' : 'error');
+    } else if (success) {
+      addLogMessage('✓ Flash transaction finalized. Device verified.', 'success');
+    } else {
+      addLogMessage('⚠ Flash sequence interrupted or invalid state.', 'error');
+    }
+  }
+
+  // simulate flashing steps (strict professional progress)
+  async function startFlashSimulation(file) {
+    if (flashingActive) return;
+    flashingActive = true;
+    flashAbortFlag = false;
+    setControlsEnabled(false);
+    resetProgressUI();
+
+    // file info logging
+    const fileSizeKB = (file.size / 1024).toFixed(1);
+    addLogMessage(`[TARGET] Selected: ${file.name} (${fileSizeKB} KB) | SHA-256 digest ready`);
+    addLogMessage(`[INIT] Establishing connection via WebFlasher core...`);
+    
+    // steps definition: percent, log message, optional delay variance
+    const steps = [
+      { percent: 8, message: "Handshake: device identified (STM32|ESP32|native mode)", delay: 500 },
+      { percent: 22, message: "Erasing target sectors — 0x08000000 region", delay: 700 },
+      { percent: 45, message: "Writing firmware blocks | address 0x08004000", delay: 850 },
+      { percent: 68, message: "Writing firmware blocks | CRC check active", delay: 800 },
+      { percent: 85, message: "Verifying flash integrity & checksums", delay: 600 },
+      { percent: 96, message: "Finalizing reboot sequence & vector validation", delay: 550 },
+      { percent: 100, message: "Flash complete — device operational. Verification OK", delay: 400 }
+    ];
+
+    let currentPercent = 0;
+    
+    const updateProgress = (percent) => {
+      let clamped = Math.min(100, Math.max(0, percent));
+      progressFill.style.width = `${clamped}%`;
+      progressPercentSpan.innerText = `${Math.floor(clamped)}%`;
+    };
+    
+    // process steps sequentially with timeouts
+    const runStep = (index) => {
+      if (!flashingActive || flashAbortFlag) {
+        if (flashingActive) finalizeFlash(false, "Flash cancelled by system.");
+        return;
+      }
+      if (index >= steps.length) {
+        // finished all steps
+        updateProgress(100);
+        addLogMessage(">> SUCCESS: Firmware deployed, target device ready.", "success");
+        finalizeFlash(true, "Device reset completed. WebFlasher ready for next operation.");
+        return;
+      }
+      
+      const step = steps[index];
+      const targetPercent = step.percent;
+      if (targetPercent > currentPercent) {
+        // smooth update (no jump if needed)
+        updateProgress(targetPercent);
+        currentPercent = targetPercent;
+      }
+      addLogMessage(step.message, "info");
+      
+      // schedule next step
+      const timeoutId = setTimeout(() => {
+        runStep(index + 1);
+      }, step.delay);
+      currentStepTimeouts.push(timeoutId);
+    };
+    
+    // start from first step
+    runStep(0);
+  }
+
+  // Main flash trigger with validation
+  function performFlash() {
+    if (flashingActive) {
+      addLogMessage("Flashing already in progress. Please wait.", "error");
+      return;
+    }
+    if (!selectedFile) {
+      addLogMessage("ERROR: No firmware file selected. Please select a valid .bin/.hex image.", "error");
+      // subtle shake effect on card? just strict
+      const flashCard = document.querySelector('.flasher-card');
+      flashCard.style.borderColor = "#6a2e2e";
+      setTimeout(() => { if(flashCard) flashCard.style.borderColor = "#222222"; }, 400);
+      return;
+    }
+    // additional file size sanity (optional, just user friendly)
+    if (selectedFile.size === 0) {
+      addLogMessage("ERROR: Empty firmware file. Aborting flash.", "error");
+      return;
+    }
+    startFlashSimulation(selectedFile);
+  }
+
+  // handle file selection via custom button
+  selectBtn.addEventListener('click', () => {
+    if (flashingActive) {
+      addLogMessage("Cannot select file — flashing operation active.", "error");
+      return;
+    }
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      // validation: accept common firmware extensions or any binary
+      const validExt = /\.(bin|hex|fw|img|rom|elf)$/i;
+      if (!validExt.test(file.name) && file.type !== "application/octet-stream") {
+        addLogMessage(`Warning: ${file.name} may not be standard firmware. Proceed with caution.`, "error");
+      }
+      selectedFile = file;
+      const sizeStr = (file.size / 1024).toFixed(1);
+      fileDisplaySpan.innerHTML = `<i class="fas fa-check-circle"></i> ${file.name} (${sizeStr} KB)`;
+      addLogMessage(`Firmware loaded: ${file.name} (${sizeStr} KB) — ready for flashing.`);
+    } else {
+      selectedFile = null;
+      fileDisplaySpan.innerHTML = `<i class="fas fa-file-code"></i> No file selected`;
+      addLogMessage("Firmware selection cleared.");
+    }
+  });
+
+  flashBtn.addEventListener('click', performFlash);
+
+  // Optional: Keyboard shortcut (ctrl+f) for pro feeling
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      e.preventDefault();
+      if (!flashingActive) performFlash();
+    }
+  });
+
+  // initial strict state: progress 0, no file
+  resetProgressUI();
+  addLogMessage("WebFlasher v2.1.0 — secure & minimal interface ready.", "info");
+  addLogMessage("Use 'Select firmware' to load image, then FLASH to program target.", "info");
+
+  // simulate professional: drag&drop support (extra style)
+  const dropZone = document.querySelector('.flasher-card');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "#7a7a7a";
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.style.borderColor = "#222222";
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "#222222";
+      if (flashingActive) {
+        addLogMessage("Device busy flashing — cannot load file.", "error");
+        return;
+      }
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        const file = files[0];
+        const validExt = /\.(bin|hex|fw|img|rom|elf)$/i;
+        if (!validExt.test(file.name) && file.type !== "application/octet-stream") {
+          addLogMessage(`Drop warning: ${file.name} extension not typical.`, "error");
+        }
+        selectedFile = file;
+        const sizeStr = (file.size / 1024).toFixed(1);
+        fileDisplaySpan.innerHTML = `<i class="fas fa-check-circle"></i> ${file.name} (${sizeStr} KB)`;
+        addLogMessage(`Firmware dropped: ${file.name} (${sizeStr} KB) ready.`);
+        // sync file input for consistency
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+      } else {
+        addLogMessage("Drop failed — no valid file.", "error");
+      }
+    });
+  }
+</script>
+</body>
+</html>
