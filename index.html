@@ -119,7 +119,7 @@
 
 <script>
 (function(){
-  // ---------- SLIP helpers ----------
+  // ---------- SLIP encoding/decoding ----------
   const slipEncode = (buffer) => {
     let encoded = [0xc0];
     for (let byte of buffer) {
@@ -140,6 +140,8 @@
   };
   const toHex = (v, s=2) => "0x" + v.toString(16).padStart(s, "0").toUpperCase();
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  
+  // ---------- Pack/unpack helpers ----------
   const pack = (fmt, ...vals) => {
     let idx = 0;
     if (fmt.replace(/[<>]/g, '').length !== vals.length) throw new Error("Pack length mismatch");
@@ -228,7 +230,7 @@
     0x2ce0806f: { name: "ESP32-C6", family: CHIP_FAMILY_ESP32C6 },
   };
 
-  // ---------- ESPLoader class ----------
+  // ---------- ESPLoader class with atomic signal control ----------
   class ESPLoader {
     constructor(port, logger) {
       this.port = port;
@@ -237,36 +239,35 @@
       this.chipFamily = null;
       this._reader = null;
       this._writer = null;
-      this._stateDTR = false;
-      this._stateRTS = false;
     }
 
+    // Atomic DTR+RTS setting – CRITICAL for CH340
     async setSignals(dtr, rts) {
-      this._stateDTR = dtr;
-      this._stateRTS = rts;
       await this.port.setSignals({ dataTerminalReady: dtr, requestToSend: rts });
     }
 
+    // Correct reset sequence (atomic)
     async hardReset(bootloader) {
       this.logger.log("Hard reset...");
       if (bootloader) {
-        // EN = LOW, GPIO0 = LOW (reset + hold boot)
+        // GPIO0 LOW + RESET LOW (hold in reset with boot mode)
         await this.setSignals(true, true);
-        await sleep(150);
-        // EN = HIGH (release reset, GPIO0 still low -> bootloader mode)
+        await sleep(120);
+        // Release RESET (EN high) while keeping GPIO0 low -> enters bootloader
         await this.setSignals(false, true);
-        await sleep(150);
-        // Release GPIO0 (normal operation)
+        await sleep(120);
+        // Release GPIO0 (normal mode)
         await this.setSignals(false, false);
-        await sleep(150);
+        await sleep(120);
       } else {
-        // simple reset: pulse EN low
+        // Simple reset pulse (EN low then high)
         await this.setSignals(true, false);
-        await sleep(100);
+        await sleep(120);
         await this.setSignals(false, false);
-        await sleep(100);
+        await sleep(120);
       }
-      await sleep(500);
+      // Extra delay for stability
+      await sleep(300);
     }
 
     async _readLoop() {
@@ -280,17 +281,34 @@
     }
 
     async init() {
+      // Put chip into bootloader mode
       await this.hardReset(true);
       this._inputBuffer = [];
       this._reader = this.port.readable.getReader();
       this._writer = this.port.writable.getWriter();
       this._readLoop();
-      await this.sync();
+
+      // Retry sync up to 3 times
+      let synced = false;
+      for (let attempt = 0; attempt < 3 && !synced; attempt++) {
+        try {
+          await this.sync();
+          synced = true;
+        } catch(e) {
+          this.logger.log(`Sync attempt ${attempt+1} failed, retrying...`);
+          await this.hardReset(true);
+        }
+      }
+      if (!synced) throw new Error("Sync failed after 3 attempts");
+
+      // Detect chip
       let magic = await this.readRegister(CHIP_DETECT_MAGIC_REG_ADDR);
       let chip = CHIP_DETECT_MAGIC_VALUES[magic >>> 0];
       if (!chip) throw new Error(`Unknown chip magic ${toHex(magic)}`);
       this.chipFamily = chip.family;
       this.logger.log(`Detected ${chip.name}`);
+
+      // Attach SPI for non-8266
       if (this.chipFamily !== CHIP_FAMILY_ESP8266) {
         await this.checkCommand(ESP_SPI_ATTACH, new Array(8).fill(0));
       }
@@ -374,16 +392,13 @@
 
     async sync() {
       this._inputBuffer.length = 0;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await this.sendCommand(ESP_SYNC, SYNC_PACKET);
-        for (let i = 0; i < 8; i++) {
-          try {
-            let [_, data] = await this.getResponse(ESP_SYNC, SYNC_TIMEOUT);
-            if (data.length >= 2 && data[0] === 0 && data[1] === 0) return true;
-          } catch(e) {}
-          await sleep(50);
-        }
-        await sleep(100);
+      await this.sendCommand(ESP_SYNC, SYNC_PACKET);
+      for (let i = 0; i < 8; i++) {
+        try {
+          let [_, data] = await this.getResponse(ESP_SYNC, SYNC_TIMEOUT);
+          if (data.length >= 2 && data[0] === 0 && data[1] === 0) return true;
+        } catch(e) {}
+        await sleep(50);
       }
       throw new Error("Sync failed");
     }
