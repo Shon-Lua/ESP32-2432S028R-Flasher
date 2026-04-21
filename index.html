@@ -485,6 +485,7 @@
     let success = false;
     try {
       addLog(`Flashing ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB) ...`, "info");
+      await selectedPort.open({ baudRate: 115200 });
       transport = new Transport(selectedPort);
       esptoolInstance = new ESPLoader({
         transport: transport,
@@ -499,7 +500,7 @@
       addLog("Connected to ESP device", "success");
       const flashAddress = 0x10000;
       addLog(`Writing firmware to address 0x${flashAddress.toString(16)}...`, "info");
-      await esptoolInstance.flashData(
+      await esptoolInstance.flash(
         [{ data: selectedFirmwareData, address: flashAddress }],
         (sent, total) => {
           const percent = (sent / total) * 100;
