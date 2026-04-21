@@ -392,7 +392,8 @@
 </script>
 
 <script type="module">
-  import { ESPLoader, Transport } from 'esptool-js';
+  import * as esptoolModule from 'esptool-js';
+  const { ESPLoader, Transport } = esptoolModule;
 
   let selectedPort = null;
   let flashingInProgress = false;
@@ -419,6 +420,7 @@
   window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
 
   function addLog(msg, type='info') {
+    const safeMsg = String(msg === undefined || msg === null ? '' : msg);
     const div = document.createElement('div');
     div.className = 'log-line';
     const prefix = document.createElement('span');
@@ -428,7 +430,7 @@
     text.className = 'log-text';
     if (type === 'error') text.style.color = '#ff9e9e';
     if (type === 'success') text.style.fontWeight = '500';
-    text.innerText = msg;
+    text.innerText = safeMsg;
     div.appendChild(prefix);
     div.appendChild(text);
     logContainer.appendChild(div);
@@ -491,15 +493,15 @@
         baudrate: 115200,
         terminal: {
           clean: () => {},
-          writeLine: (msg) => addLog(msg, "info"),
-          write: (msg) => addLog(msg, "info")
+          writeLine: (msg) => addLog(String(msg !== undefined ? msg : ""), "info"),
+          write: (msg) => addLog(String(msg !== undefined ? msg : ""), "info")
         }
       });
       await esptoolInstance.main();
       addLog("Connected to ESP device", "success");
       const flashAddress = 0x10000;
       addLog(`Writing firmware to address 0x${flashAddress.toString(16)}...`, "info");
-      await esptoolInstance.writeFlash(
+      await esptoolInstance.flashData(
         [{ data: selectedFirmwareData, address: flashAddress }],
         (sent, total) => {
           const percent = (sent / total) * 100;
@@ -513,7 +515,7 @@
       addLog("Device rebooted", "success");
       success = true;
     } catch(err) {
-      addLog(`Flashing error: ${err.message}`, "error");
+      addLog(`Flashing error: ${err.message || String(err)}`, "error");
       success = false;
     } finally {
       flashingInProgress = false;
