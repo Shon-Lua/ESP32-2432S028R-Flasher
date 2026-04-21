@@ -196,7 +196,7 @@
   const ESP_FLASH_END = 0x04;
   const ESP_CHECKSUM_MAGIC = 0xef;
   const DEFAULT_TIMEOUT = 3000;
-  const SYNC_TIMEOUT = 300;
+  const SYNC_TIMEOUT = 500;
   const ERASE_REGION_TIMEOUT_PER_MB = 30000;
   const FLASH_WRITE_SIZE = 0x400;
   const FLASH_SECTOR_SIZE = 0x1000;
@@ -239,21 +239,20 @@
     }
 
     async preciseBootloaderSequence() {
-      this.logger.log(">>> BOOT button HOLD (RTS=HIGH → GPIO0 LOW)");
+      this.logger.log("=== BOOTLOADER ENTRY SEQUENCE (slow press/hold) ===");
+      this.logger.log("1. Press and HOLD BOOT button (RTS=HIGH → GPIO0=LOW)");
       await this.setSignals(false, true);
-      await sleep(100);
-      this.logger.log(">>> RESET button PRESS (DTR=HIGH → EN LOW)");
+      await sleep(350);
+      this.logger.log("2. Press and HOLD RESET button (DTR=HIGH → EN=LOW) while BOOT still held");
       await this.setSignals(true, true);
-      await sleep(100);
-      this.logger.log(">>> RESET button RELEASE (DTR=LOW → EN HIGH)");
+      await sleep(350);
+      this.logger.log("3. Release RESET button (DTR=LOW → EN=HIGH) - chip resets into bootloader mode");
       await this.setSignals(false, true);
-      await sleep(100);
-      this.logger.log(">>> BOOT button RELEASE (RTS=LOW → GPIO0 HIGH)");
+      await sleep(350);
+      this.logger.log("4. Release BOOT button (RTS=LOW → GPIO0=HIGH)");
       await this.setSignals(false, false);
-      await sleep(300);
-      this.logger.log("Bootloader entry sequence completed, waiting for ESP ROM...");
-      await sleep(200);
-      this._inputBuffer.length = 0;
+      await sleep(600);
+      this.logger.log("=== Sequence complete. ESP32 should be in bootloader mode ===");
     }
 
     async _readLoop() {
@@ -277,14 +276,14 @@
     async sync() {
       this._inputBuffer.length = 0;
       await this.sendCommand(ESP_SYNC, SYNC_PACKET);
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 12; i++) {
         try {
           let [_, data] = await this.getResponse(ESP_SYNC, SYNC_TIMEOUT);
           if (data.length >= 2 && data[0] === 0 && data[1] === 0) return true;
         } catch(e) {}
-        await sleep(80);
+        await sleep(100);
       }
-      throw new Error("Sync failed after 10 attempts");
+      throw new Error("Sync failed after multiple attempts");
     }
 
     async readRegister(reg) {
