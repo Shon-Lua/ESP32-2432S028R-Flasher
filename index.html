@@ -534,7 +534,7 @@
     await portWriter.write(encoded);
   }
 
-  async function readPacket(timeout = 3000) {
+  async function readPacket(timeout = 5000) {
     if(!portReader) throw new Error("Port reader not available");
     let buffer = [];
     let started = false;
@@ -598,23 +598,25 @@
   }
 
   async function espFlashBegin(size, offset) {
+    const sectorSize = 4096;
+    const eraseSize = Math.ceil(size / sectorSize) * sectorSize;
     const blockSize = 1024;
     const numBlocks = Math.ceil(size / blockSize);
     const payload = new Uint8Array(16);
     const view = new DataView(payload.buffer);
-    view.setUint32(0, size, true);
+    view.setUint32(0, eraseSize, true);
     view.setUint32(4, numBlocks, true);
     view.setUint32(8, blockSize, true);
     view.setUint32(12, offset, true);
     await sendCommand(0x02, payload);
-    const response = await readPacket(5000);
+    const response = await readPacket(10000);
     if(response.length < 2 || response[0] !== 0x01 || response[1] !== 0x02) {
       throw new Error("Flash begin failed");
     }
-    addLog(`Flash begin: ${size} bytes at 0x${offset.toString(16)}`, "info");
+    addLog(`Flash begin: erase ${eraseSize} bytes, ${numBlocks} blocks`, "info");
   }
 
-  async function espWriteFlashBlock(addr, seq, data) {
+  async function espWriteFlashBlock(seq, data) {
     const header = new Uint8Array(16);
     const view = new DataView(header.buffer);
     view.setUint32(0, data.length, true);
@@ -639,18 +641,18 @@
     if(response.length < 2 || response[0] !== 0x01 || response[1] !== 0x04) {
       throw new Error("Flash end failed");
     }
-    addLog("Flash end successful", "success");
+    addLog("Flash end (reboot) successful", "success");
   }
 
-  async function espWriteFlash(addr, firmwareData, onProgress) {
+  async function espWriteFlash(firmwareData, onProgress) {
     const total = firmwareData.length;
     let offset = 0;
     const blockSize = 1024;
     let seq = 0;
-    addLog(`Writing ${total} bytes to 0x${addr.toString(16)}...`, "info");
+    addLog(`Writing ${total} bytes...`, "info");
     while(offset < total) {
       const chunk = firmwareData.slice(offset, offset + blockSize);
-      await espWriteFlashBlock(addr + offset, seq, chunk);
+      await espWriteFlashBlock(seq, chunk);
       offset += chunk.length;
       seq++;
       const percent = (offset / total) * 100;
@@ -668,7 +670,7 @@
       await activePort.setSignals({ dataTerminalReady: true, requestToSend: false });
       await sleep(200);
       await activePort.setSignals({ dataTerminalReady: false, requestToSend: false });
-      addLog("Device rebooted", "success");
+      addLog("Hard reset done", "success");
     } catch(e) { addLog(`Reset failed: ${e.message}`, "error"); }
   }
 
@@ -687,7 +689,7 @@
       await espReadMac();
       const flashAddr = 0x10000;
       await espFlashBegin(selectedFirmwareData.length, flashAddr);
-      await espWriteFlash(flashAddr, selectedFirmwareData, (p) => {
+      await espWriteFlash(selectedFirmwareData, (p) => {
         updateProgress(p);
         if(Math.floor(p) % 10 === 0 && p < 100 && p > 0) addLog(`Progress ${Math.floor(p)}%`, "info");
       });
@@ -773,7 +775,7 @@
 
   if(!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
   addLog("WebFlasher ready. Select firmware, connect serial port, then click FLASH.", "info");
-  addLog("ESP32 protocol: FLASH_BEGIN (0x02), FLASH_DATA (0x03), FLASH_END (0x04).", "info");
+  addLog("Protocol: FLASH_BEGIN(0x02), FLASH_DATA(0x03), FLASH_END(0x04).", "info");
 })();
 </script>
 </body>
