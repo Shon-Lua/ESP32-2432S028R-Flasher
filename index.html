@@ -394,7 +394,8 @@
 <script type="module">
   import { ESPLoader, Transport } from 'esptool-js';
 
-  let activePort = null;
+  let currentTransport = null;
+  let esptool = null;
   let flashingInProgress = false;
   let selectedFirmwareData = null;
   let selectedFirmwareName = null;
@@ -451,38 +452,39 @@
     else if(!selectedFirmwareData) flashBtn.disabled = true;
   }
 
-  async function forceClosePort(port) {
-    if (!port) return;
-    try {
-      // Attempt to release locks if any
-      if (port.readable && port.readable.locked) {
-        try {
-          const reader = port.readable.getReader();
-          await reader.cancel();
-          reader.releaseLock();
-        } catch(e) {}
-      }
-      if (port.writable && port.writable.locked) {
-        try {
-          const writer = port.writable.getWriter();
-          await writer.close();
-          writer.releaseLock();
-        } catch(e) {}
-      }
-      await port.close();
-    } catch(e) {}
-  }
-
-  async function closeSerial() {
-    if (activePort) {
-      await forceClosePort(activePort);
-      activePort = null;
+  async function closeCurrentConnection() {
+    if (esptool) {
+      try { await esptool.hardReset(); } catch(e) {}
+      try { await esptool.transport.disconnect(); } catch(e) {}
+      esptool = null;
     }
+    if (currentTransport) {
+      try {
+        const port = currentTransport.device;
+        if (port && port.readable && port.writable) {
+          try {
+            if (port.readable.locked) {
+              const reader = port.readable.getReader();
+              try { await reader.cancel(); } catch(e) {}
+              reader.releaseLock();
+            }
+            if (port.writable.locked) {
+              const writer = port.writable.getWriter();
+              try { await writer.close(); } catch(e) {}
+              writer.releaseLock();
+            }
+          } catch(e) {}
+          try { await port.close(); } catch(e) {}
+        }
+      } catch(e) {}
+      currentTransport = null;
+    }
+    await new Promise(resolve => setTimeout(resolve, 300));
   }
 
   function updatePortUI() {
-    if (activePort) {
-      const info = activePort.getInfo();
+    if (currentTransport && currentTransport.device) {
+      const info = currentTransport.device.getInfo();
       const name = info.usbProductName || info.friendlyName || 'Serial device';
       const vid = info.usbVendorId || '?';
       const pid = info.usbProductId || '?';
@@ -494,20 +496,17 @@
 
   async function startFlashing() {
     if (flashingInProgress) return;
-    if (!activePort) { addLog("No serial port selected", "error"); return; }
+    if (!currentTransport) { addLog("No serial port selected", "error"); return; }
     if (!selectedFirmwareData) { addLog("No firmware selected", "error"); return; }
     flashingInProgress = true;
     setControlsEnabled(false);
     resetProgress();
     let success = false;
-    let localTransport = null;
     let localEsptool = null;
     try {
       addLog(`Flashing ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB) using esptool-js...`, "info");
-      // Create a new Transport with the already opened port
-      localTransport = new Transport(activePort);
       localEsptool = new ESPLoader({
-        transport: localTransport,
+        transport: currentTransport,
         baudrate: 115200,
         terminal: {
           clean: () => {},
@@ -539,13 +538,13 @@
       addLog(`Flashing error: ${err.message}`, "error");
       success = false;
     } finally {
-      if (localEsptool) {
-        try { await localEsptool.transport.disconnect(); } catch(e) {}
-      }
       flashingInProgress = false;
       setControlsEnabled(true);
       if (success) addLog("Device ready.", "success");
       else addLog("Flashing failed, please retry.", "error");
+      if (localEsptool) {
+        try { await localEsptool.transport.disconnect(); } catch(e) {}
+      }
     }
   }
 
@@ -553,19 +552,15 @@
     if (flashingInProgress) { addLog("Flashing in progress, wait", "error"); return; }
     if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
     try {
-      // Close existing port properly
-      if (activePort) {
-        await closeSerial();
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+      await closeCurrentConnection();
       const port = await navigator.serial.requestPort();
       await port.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none' });
-      activePort = port;
+      currentTransport = new Transport(port);
       updatePortUI();
       addLog(`Port connected @115200 baud`, "success");
     } catch(err) {
       addLog(`Port error: ${err.message}`, "error");
-      activePort = null;
+      currentTransport = null;
       updatePortUI();
     }
   }
@@ -586,7 +581,7 @@
         if (el.getAttribute('data-file') === file) el.classList.add('active');
         else el.classList.remove('active');
       });
-      if (!flashingInProgress && activePort) flashBtn.disabled = false;
+      if (!flashingInProgress && currentTransport) flashBtn.disabled = false;
       else if (!flashingInProgress) flashBtn.disabled = true;
     } catch(e) {
       addLog(`Failed to load ${name}: ${e.message}`, "error");
