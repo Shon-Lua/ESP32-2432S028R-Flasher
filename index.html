@@ -496,8 +496,8 @@
           write: (msg) => addLog(msg, "info")
         }
       });
-      await esptool.initialize();
-      const chip = await esptool.chip;
+      await esptool.main();
+      const chip = esptool.chip;
       addLog(`Chip: ${chip.getChipName()}`, "success");
       const mac = chip.getMac();
       if (mac) addLog(`MAC: ${mac.join(':')}`, "info");
