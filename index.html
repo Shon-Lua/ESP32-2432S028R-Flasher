@@ -196,7 +196,7 @@
   const ESP_FLASH_END = 0x04;
   const ESP_CHECKSUM_MAGIC = 0xef;
   const DEFAULT_TIMEOUT = 3000;
-  const SYNC_TIMEOUT = 100;
+  const SYNC_TIMEOUT = 300;
   const ERASE_REGION_TIMEOUT_PER_MB = 30000;
   const FLASH_WRITE_SIZE = 0x400;
   const FLASH_SECTOR_SIZE = 0x1000;
@@ -238,37 +238,22 @@
       await this.port.setSignals({ dataTerminalReady: dtr, requestToSend: rts });
     }
 
-    async hardReset(bootloader) {
-      this.logger.log("Hard reset...");
-      if (bootloader) {
-        await this.setSignals(true, true);
-        await sleep(120);
-        await this.setSignals(false, true);
-        await sleep(120);
-        await this.setSignals(false, false);
-        await sleep(120);
-      } else {
-        await this.setSignals(true, false);
-        await sleep(120);
-        await this.setSignals(false, false);
-        await sleep(120);
-      }
-      await sleep(300);
-    }
-
     async preciseBootloaderSequence() {
-      this.logger.log("Emulating Reset+Boot buttons: BOOT hold...");
+      this.logger.log(">>> BOOT button HOLD (RTS=HIGH → GPIO0 LOW)");
       await this.setSignals(false, true);
-      await sleep(50);
-      this.logger.log("RESET press...");
+      await sleep(100);
+      this.logger.log(">>> RESET button PRESS (DTR=HIGH → EN LOW)");
       await this.setSignals(true, true);
-      await sleep(50);
-      this.logger.log("RESET release...");
+      await sleep(100);
+      this.logger.log(">>> RESET button RELEASE (DTR=LOW → EN HIGH)");
       await this.setSignals(false, true);
-      await sleep(50);
-      this.logger.log("BOOT release...");
+      await sleep(100);
+      this.logger.log(">>> BOOT button RELEASE (RTS=LOW → GPIO0 HIGH)");
       await this.setSignals(false, false);
+      await sleep(300);
+      this.logger.log("Bootloader entry sequence completed, waiting for ESP ROM...");
       await sleep(200);
+      this._inputBuffer.length = 0;
     }
 
     async _readLoop() {
@@ -292,14 +277,14 @@
     async sync() {
       this._inputBuffer.length = 0;
       await this.sendCommand(ESP_SYNC, SYNC_PACKET);
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 10; i++) {
         try {
           let [_, data] = await this.getResponse(ESP_SYNC, SYNC_TIMEOUT);
           if (data.length >= 2 && data[0] === 0 && data[1] === 0) return true;
         } catch(e) {}
-        await sleep(50);
+        await sleep(80);
       }
-      throw new Error("Sync failed");
+      throw new Error("Sync failed after 10 attempts");
     }
 
     async readRegister(reg) {
@@ -428,6 +413,24 @@
       await this.flashFinish();
     }
 
+    async hardReset(bootloader) {
+      this.logger.log("Hard reset...");
+      if (bootloader) {
+        await this.setSignals(true, true);
+        await sleep(120);
+        await this.setSignals(false, true);
+        await sleep(120);
+        await this.setSignals(false, false);
+        await sleep(120);
+      } else {
+        await this.setSignals(true, false);
+        await sleep(120);
+        await this.setSignals(false, false);
+        await sleep(120);
+      }
+      await sleep(300);
+    }
+
     async disconnect() {
       if (this._reader) await this._reader.cancel();
       if (this._writer) await this._writer.close();
@@ -510,7 +513,7 @@
     addLog(`Starting flash: ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB)`, "info");
     try {
       await esploader.preciseBootloaderSequence();
-      addLog("Bootloader entry sequence completed, syncing...", "info");
+      addLog("Synchronizing with ESP32 bootloader...", "info");
       await esploader.sync();
       addLog("Sync OK", "success");
       await esploader.detectChip();
