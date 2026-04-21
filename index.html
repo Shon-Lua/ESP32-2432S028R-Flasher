@@ -446,47 +446,50 @@
 
   function setControlsEnabled(enabled) {
     selectPortBtn.disabled = !enabled;
-    if(enabled && selectedFirmwareData && !flashingInProgress) flashBtn.disabled = false;
+    if(enabled && selectedFirmwareData && selectedPort && !flashingInProgress) flashBtn.disabled = false;
     else if(!enabled) flashBtn.disabled = true;
-    else if(!selectedFirmwareData) flashBtn.disabled = true;
+    else if(!selectedFirmwareData || !selectedPort) flashBtn.disabled = true;
   }
 
-  async function closePortIfOpen() {
-    if (selectedPort) {
-      try {
-        if (selectedPort.readable && selectedPort.readable.locked) {
-          const reader = selectedPort.readable.getReader();
-          await reader.cancel();
-          reader.releaseLock();
-        }
-        if (selectedPort.writable && selectedPort.writable.locked) {
-          const writer = selectedPort.writable.getWriter();
-          await writer.close();
-          writer.releaseLock();
-        }
-        if (selectedPort.writable && selectedPort.readable) {
-          await selectedPort.close();
-        }
-      } catch (e) {
-        console.warn("port close error", e);
+  async function safelyClosePort(port) {
+    if (!port) return;
+    try {
+      if (port.readable && port.readable.locked) {
+        const reader = port.readable.getReader();
+        await reader.cancel();
+        reader.releaseLock();
       }
+      if (port.writable && port.writable.locked) {
+        const writer = port.writable.getWriter();
+        await writer.close();
+        writer.releaseLock();
+      }
+      if (port.writable && port.readable) {
+        await port.close();
+      }
+    } catch (e) {
+      console.warn("port close error", e);
     }
   }
 
-  async function connectToPort() {
-    if (flashingInProgress) { addLog("Flashing in progress, wait", "error"); return; }
+  async function selectSerialPort() {
+    if (flashingInProgress) { addLog("Flashing in progress, cannot change port", "error"); return; }
     if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
     try {
-      await closePortIfOpen();
+      if (selectedPort) {
+        await safelyClosePort(selectedPort);
+        selectedPort = null;
+      }
       const port = await navigator.serial.requestPort();
       selectedPort = port;
       const info = port.getInfo();
       const name = info.usbProductName || info.friendlyName || 'Serial device';
       const vid = info.usbVendorId || '?';
       const pid = info.usbProductId || '?';
-      portStatusSpan.innerHTML = `<i class="fas fa-link"></i> Selected: ${name} (${vid}:${pid}) <i class="fas fa-clock"></i> (open on flash)`;
+      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Port selected: ${name} (${vid}:${pid}) <i class="fas fa-hourglass-half"></i> (will open on flash)`;
       addLog(`Port selected: ${name}`, "success");
       if (selectedFirmwareData) flashBtn.disabled = false;
+      else flashBtn.disabled = true;
     } catch(err) {
       addLog(`Port selection error: ${err.message}`, "error");
       selectedPort = null;
@@ -507,7 +510,7 @@
     let success = false;
     try {
       addLog(`Flashing ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB) ...`, "info");
-      await closePortIfOpen();
+      await safelyClosePort(selectedPort);
       await selectedPort.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none' });
       addLog(`Serial port opened @115200 baud`, "success");
       transport = new Transport(selectedPort);
@@ -548,11 +551,7 @@
       if (esptoolInstance) {
         try { await esptoolInstance.transport.disconnect(); } catch(e) {}
       }
-      try {
-        if (selectedPort && selectedPort.readable && selectedPort.writable) {
-          await selectedPort.close();
-        }
-      } catch(e) {}
+      await safelyClosePort(selectedPort);
       setControlsEnabled(true);
       if (success) addLog("Device ready.", "success");
       else addLog("Flashing failed, please retry.", "error");
@@ -605,7 +604,7 @@
   });
 
   searchInput.addEventListener('input', filterFirmwares);
-  selectPortBtn.addEventListener('click', connectToPort);
+  selectPortBtn.addEventListener('click', selectSerialPort);
   flashBtn.addEventListener('click', startFlashing);
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
