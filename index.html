@@ -461,7 +461,7 @@
       const name = info.usbProductName || info.friendlyName || 'Serial device';
       const vid = info.usbVendorId || '?';
       const pid = info.usbProductId || '?';
-      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Port selected: ${name} (${vid}:${pid}) <i class="fas fa-hourglass-half"></i> (will open on flash)`;
+      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Port selected: ${name} (${vid}:${pid})`;
       addLog(`Port selected: ${name}`, "success");
       if (selectedFirmwareData) flashBtn.disabled = false;
       else flashBtn.disabled = true;
@@ -485,7 +485,6 @@
     let success = false;
     try {
       addLog(`Flashing ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB) ...`, "info");
-      await selectedPort.open({ baudRate: 115200 });
       transport = new Transport(selectedPort);
       esptoolInstance = new ESPLoader({
         transport: transport,
@@ -500,7 +499,7 @@
       addLog("Connected to ESP device", "success");
       const flashAddress = 0x10000;
       addLog(`Writing firmware to address 0x${flashAddress.toString(16)}...`, "info");
-      await esptoolInstance.flash(
+      await esptoolInstance.writeFlash(
         [{ data: selectedFirmwareData, address: flashAddress }],
         (sent, total) => {
           const percent = (sent / total) * 100;
