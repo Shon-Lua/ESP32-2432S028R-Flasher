@@ -459,7 +459,19 @@
       esptool = null;
     }
     if (activePort) {
-      try { await activePort.close(); } catch(e) {}
+      try {
+        if (activePort.readable && activePort.readable.locked) {
+          const reader = activePort.readable.getReader();
+          try { await reader.cancel(); } catch(e) {}
+          reader.releaseLock();
+        }
+        if (activePort.writable && activePort.writable.locked) {
+          const writer = activePort.writable.getWriter();
+          try { await writer.close(); } catch(e) {}
+          writer.releaseLock();
+        }
+        await activePort.close();
+      } catch(e) {}
       activePort = null;
     }
   }
@@ -484,10 +496,11 @@
     setControlsEnabled(false);
     resetProgress();
     let success = false;
+    let localEsptool = null;
     try {
       addLog(`Flashing ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB) using esptool-js...`, "info");
       const transport = new Transport(activePort);
-      esptool = new ESPLoader({
+      localEsptool = new ESPLoader({
         transport: transport,
         baudrate: 115200,
         terminal: {
@@ -496,14 +509,14 @@
           write: (msg) => addLog(msg, "info")
         }
       });
-      await esptool.main();
-      const chip = esptool.chip;
+      await localEsptool.main();
+      const chip = localEsptool.chip;
       addLog(`Chip: ${chip.getChipName()}`, "success");
       const mac = chip.getMac();
       if (mac) addLog(`MAC: ${mac.join(':')}`, "info");
       const flashAddress = 0x10000;
       addLog(`Writing firmware to address 0x${flashAddress.toString(16)}...`, "info");
-      await esptool.flashData(
+      await localEsptool.flashData(
         [{ data: selectedFirmwareData, address: flashAddress }],
         (sent, total) => {
           const percent = (sent / total) * 100;
@@ -513,18 +526,20 @@
       );
       updateProgress(100);
       addLog("Firmware successfully written!", "success");
-      await esptool.hardReset();
+      await localEsptool.hardReset();
       addLog("Device rebooted", "success");
       success = true;
     } catch(err) {
       addLog(`Flashing error: ${err.message}`, "error");
       success = false;
     } finally {
+      if (localEsptool) {
+        try { await localEsptool.transport.disconnect(); } catch(e) {}
+      }
       flashingInProgress = false;
       setControlsEnabled(true);
       if (success) addLog("Device ready.", "success");
       else addLog("Flashing failed, please retry.", "error");
-      try { await closeSerial(); } catch(e) {}
     }
   }
 
@@ -532,13 +547,20 @@
     if (flashingInProgress) { addLog("Flashing in progress, wait", "error"); return; }
     if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
     try {
-      if (activePort) await closeSerial();
+      if (activePort) {
+        await closeSerial();
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
       const port = await navigator.serial.requestPort();
       await port.open({ baudRate: 115200, dataBits: 8, stopBits: 1, parity: 'none', flowControl: 'none' });
       activePort = port;
       updatePortUI();
       addLog(`Port connected @115200 baud`, "success");
-    } catch(err) { addLog(`Port error: ${err.message}`, "error"); }
+    } catch(err) {
+      addLog(`Port error: ${err.message}`, "error");
+      activePort = null;
+      updatePortUI();
+    }
   }
 
   async function loadFirmware(name, file) {
