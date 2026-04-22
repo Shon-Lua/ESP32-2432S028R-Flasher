@@ -409,22 +409,6 @@
   import * as esptoolModule from 'esptool-js';
   const { ESPLoader, Transport } = esptoolModule;
 
-  async function preloadResources() {
-    await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = resolve;
-      img.onerror = resolve;
-      img.src = "Logo.png";
-    });
-  }
-
-  await preloadResources();
-
-  const splash = document.getElementById('splash');
-  const appWrapper = document.getElementById('appWrapper');
-  if (splash) splash.style.display = 'none';
-  if (appWrapper) appWrapper.style.display = 'flex';
-
   let selectedPort = null;
   let flashingInProgress = false;
   let currentFirmwareCacheKey = null;
@@ -435,6 +419,8 @@
 
   const firmwareCache = new Map();
 
+  const splash = document.getElementById('splash');
+  const appWrapper = document.getElementById('appWrapper');
   const selectPortBtn = document.getElementById('selectPortBtn');
   const portStatusSpan = document.getElementById('portStatus');
   const flashBtn = document.getElementById('flashActionBtn');
@@ -808,14 +794,30 @@
     });
   }
 
+  async function preloadResources() {
+    await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = resolve;
+      img.src = "Logo.png";
+    });
+  }
+
   searchInput.addEventListener('input', filterFirmwares);
   selectPortBtn.addEventListener('click', selectSerialPort);
   flashBtn.addEventListener('click', startFlashing);
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
-  
-  await initializeAllFirmwares();
-  addLog("WebFlasher ready. Select firmware from library, then choose port and flash.", "info");
+
+  async function boot() {
+    await preloadResources();
+    await initializeAllFirmwares();
+    if (splash) splash.style.display = 'none';
+    if (appWrapper) appWrapper.style.display = 'flex';
+    addLog("WebFlasher ready. Select firmware from library, then choose port and flash.", "info");
+  }
+
+  boot();
 </script>
 </body>
 </html>
