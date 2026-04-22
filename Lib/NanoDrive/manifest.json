@@ -3,6 +3,7 @@
   "type": "full",
   "basePath": "Lib/NanoDrive/",
   "files": {
+    "boothelp": "false",
     "bootloader": "bootloader.bin",
     "partitions": "partitions.bin",
     "app": "NanoDrive.bin",
