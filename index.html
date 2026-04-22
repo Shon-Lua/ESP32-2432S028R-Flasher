@@ -453,6 +453,16 @@
     else if(!selectedFirmwareData || !selectedPort) flashBtn.disabled = true;
   }
 
+  function uint8ToBinaryString(u8) {
+    let result = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < u8.length; i += chunkSize) {
+      const chunk = u8.subarray(i, i + chunkSize);
+      result += String.fromCharCode.apply(null, chunk);
+    }
+    return result;
+  }
+
   async function selectSerialPort() {
     if (flashingInProgress) { addLog("Flashing in progress, cannot change port", "error"); return; }
     if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
@@ -501,10 +511,11 @@
       addLog("Connected to ESP device", "success");
       const flashAddress = 0x10000;
       addLog(`Writing firmware to address 0x${flashAddress.toString(16)}...`, "info");
+      const binaryData = uint8ToBinaryString(selectedFirmwareData);
       await esptoolInstance.writeFlash({
         fileArray: [
           {
-            data: selectedFirmwareData,
+            data: binaryData,
             address: flashAddress
           }
         ],
