@@ -171,21 +171,38 @@
       border-color: #ffffff #262626 #262626 #ffffff;
     }
     .fw-name {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 0.4rem;
+    }
+    .fw-name-text {
+      flex: 1;
       font-weight: 600;
       font-size: 1rem;
-      margin-bottom: 0.4rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
     }
     .fw-name i {
       font-size: 0.8rem;
       color: #ffffff;
+      flex-shrink: 0;
+      margin-top: 2px;
     }
     .fw-desc {
       font-size: 0.7rem;
       color: #aaaaaa;
       line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
     }
     .main-content {
       flex: 1;
@@ -402,7 +419,10 @@
     </div>
     <div class="firmware-list" id="firmwareListContainer">
       <div class="fw-item" data-fw="NanoDrive" data-file="Lib/NanoDrive/NanoDrive.bin" data-custom="false">
-        <div class="fw-name">NanoDrive <i class="fas fa-microchip"></i></div>
+        <div class="fw-name">
+          <span class="fw-name-text">NanoDrive</span>
+          <i class="fas fa-microchip"></i>
+        </div>
         <div class="fw-desc" id="defaultFwDesc">Loading description...</div>
       </div>
     </div>
@@ -665,7 +685,10 @@
     fwDiv.setAttribute('data-file', 'custom');
     fwDiv.setAttribute('data-custom', 'true');
     fwDiv.innerHTML = `
-      <div class="fw-name">${name} <i class="fas fa-file-upload"></i></div>
+      <div class="fw-name">
+        <span class="fw-name-text">${name}</span>
+        <i class="fas fa-file-upload"></i>
+      </div>
       <div class="fw-desc">Custom firmware uploaded by user</div>
     `;
     fwDiv.addEventListener('click', async () => {
@@ -717,7 +740,7 @@
     });
   }
 
-  async function loadDefaultFirmwareWithDescription() {
+  async function loadDescriptionOnly() {
     try {
       const descResponse = await fetch('Lib/NanoDrive/desc.txt');
       if (descResponse.ok) {
@@ -729,10 +752,6 @@
       }
     } catch (e) {
       if (defaultFwDescSpan) defaultFwDescSpan.innerText = 'Advanced firmware with real-time processing';
-    }
-    
-    if (defaultFwItem && !defaultFwItem.classList.contains('active')) {
-      await loadFirmware('NanoDrive', 'Lib/NanoDrive/NanoDrive.bin');
     }
   }
 
@@ -755,7 +774,7 @@
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
   
-  await loadDefaultFirmwareWithDescription();
+  await loadDescriptionOnly();
   addLog("WebFlasher ready. Select firmware, select serial port, then click FLASH.", "info");
 </script>
 </body>
