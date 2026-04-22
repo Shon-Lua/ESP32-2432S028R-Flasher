@@ -501,14 +501,24 @@
       addLog("Connected to ESP device", "success");
       const flashAddress = 0x10000;
       addLog(`Writing firmware to address 0x${flashAddress.toString(16)}...`, "info");
-      await esptoolInstance.writeFlash(
-        [{ data: selectedFirmwareData, address: flashAddress }],
-        (sent, total) => {
+      await esptoolInstance.writeFlash({
+        fileArray: [
+          {
+            data: selectedFirmwareData,
+            address: flashAddress
+          }
+        ],
+        flashSize: "keep",
+        eraseAll: false,
+        compress: true,
+        reportProgress: (sent, total) => {
           const percent = (sent / total) * 100;
           updateProgress(percent);
-          if (Math.floor(percent) % 10 === 0 && percent < 100 && percent > 0) addLog(`Progress ${Math.floor(percent)}%`, "info");
+          if (Math.floor(percent) % 10 === 0 && percent < 100 && percent > 0) {
+            addLog(`Progress ${Math.floor(percent)}%`, "info");
+          }
         }
-      );
+      });
       updateProgress(100);
       addLog("Firmware successfully written!", "success");
       await esptoolInstance.hardReset();
