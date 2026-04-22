@@ -630,11 +630,7 @@
       
       await esptoolInstance.main();
       addLog("Connected to ESP device", "success");
-      
-      addLog("Performing full flash erase...", "info");
-      await esptoolInstance.eraseFlash();
-      addLog("Flash fully erased", "success");
-      
+            await esptoolInstance.eraseFlash();      
       const fileArray = [];
       
       if (currentBootloaderData && currentBootloaderData.length > 0) {
@@ -662,14 +658,12 @@
         compress: true,
         eraseAll: false
       });
-      
-      addLog("Firmware successfully flashed", "success");
-      
+            
       try {
         await esptoolInstance.after();
-        addLog("Device rebooted", "success");
+        addLog("Reboot device!", "success");
       } catch (e) {
-        addLog("Auto reset not supported, please press RESET button on device", "info");
+        addLog("Reboot device!", "info");
       }
       
       success = true;
@@ -682,7 +676,7 @@
         try { await esptoolInstance.transport.disconnect(); } catch(e) {}
       }
       setControlsEnabled(true);
-      if (success) addLog("Device ready. Flash memory is now clean and programmed.", "success");
+      if (success)
       else addLog("Flashing failed, please retry. Consider manual power cycle.", "error");
     }
   }
