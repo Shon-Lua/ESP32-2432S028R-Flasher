@@ -401,9 +401,9 @@
       <button id="addCustomFirmwareBtn" class="btn-plus"><i class="fas fa-plus"></i></button>
     </div>
     <div class="firmware-list" id="firmwareListContainer">
-      <div class="fw-item" data-fw="NanoDrive" data-file="Lib/NanoDrive/NanoDrive.bin" data-custom="false">
+      <div class="fw-item" data-manifest="Lib/NanoDrive/manifest.json">
         <div class="fw-name">NanoDrive <i class="fas fa-microchip"></i></div>
-        <div class="fw-desc" id="defaultFwDesc">Loading description...</div>
+        <div class="fw-desc">Loading description...</div>
       </div>
     </div>
   </div>
@@ -471,7 +471,8 @@
   let flashingInProgress = false;
   let selectedFirmwareData = null;
   let selectedFirmwareName = null;
-  let selectedFirmwareFile = null;
+  let bootloaderData = null;
+  let partitionsData = null;
 
   const selectPortBtn = document.getElementById('selectPortBtn');
   const portStatusSpan = document.getElementById('portStatus');
@@ -485,8 +486,6 @@
   const addCustomBtn = document.getElementById('addCustomFirmwareBtn');
   const customFileInput = document.getElementById('customFirmwareInput');
   const firmwareListContainer = document.getElementById('firmwareListContainer');
-  const defaultFwItem = document.querySelector('.fw-item[data-fw="NanoDrive"]');
-  const defaultFwDescSpan = document.getElementById('defaultFwDesc');
 
   function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
   function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
@@ -530,6 +529,83 @@
     return result;
   }
 
+  async function loadFirmwareFromManifest(manifestPath) {
+    try {
+      addLog(`Loading manifest: ${manifestPath}`, "info");
+      const manifestResp = await fetch(manifestPath);
+      if (!manifestResp.ok) throw new Error(`Manifest fetch failed: ${manifestResp.status}`);
+      const manifest = await manifestResp.json();
+      
+      const basePath = manifest.basePath || manifestPath.replace("manifest.json", "");
+      
+      addLog(`Loading ${manifest.name} (type: ${manifest.type})...`, "info");
+      
+      bootloaderData = null;
+      partitionsData = null;
+      selectedFirmwareData = null;
+      
+      if (manifest.type === "full") {
+        const [boot, part, app] = await Promise.all([
+          fetch(basePath + manifest.files.bootloader).then(r => { if(!r.ok) throw new Error(`bootloader not found`); return r.arrayBuffer(); }),
+          fetch(basePath + manifest.files.partitions).then(r => { if(!r.ok) throw new Error(`partitions not found`); return r.arrayBuffer(); }),
+          fetch(basePath + manifest.files.app).then(r => { if(!r.ok) throw new Error(`firmware not found`); return r.arrayBuffer(); })
+        ]);
+        bootloaderData = new Uint8Array(boot);
+        partitionsData = new Uint8Array(part);
+        selectedFirmwareData = new Uint8Array(app);
+        addLog(`Full firmware loaded: bootloader ${bootloaderData.length} bytes, partitions ${partitionsData.length} bytes, app ${selectedFirmwareData.length} bytes`, "success");
+      } else if (manifest.type === "single") {
+        const app = await fetch(basePath + manifest.file).then(r => { if(!r.ok) throw new Error(`firmware file not found`); return r.arrayBuffer(); });
+        selectedFirmwareData = new Uint8Array(app);
+        addLog(`Single firmware loaded: ${selectedFirmwareData.length} bytes`, "success");
+      } else {
+        throw new Error(`Unknown manifest type: ${manifest.type}`);
+      }
+      
+      selectedFirmwareName = manifest.name;
+      activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${manifest.name} (${(selectedFirmwareData.length/1024).toFixed(2)} KB)`;
+      
+      document.querySelectorAll('.fw-item').forEach(el => {
+        if (el.getAttribute('data-manifest') === manifestPath) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+      
+      if (!flashingInProgress && selectedPort) flashBtn.disabled = false;
+      else if (!flashingInProgress) flashBtn.disabled = true;
+      
+    } catch(e) {
+      addLog(`Failed to load firmware from manifest: ${e.message}`, "error");
+      selectedFirmwareData = null;
+      bootloaderData = null;
+      partitionsData = null;
+      activeFirmwareDisplay.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed to load firmware`;
+      flashBtn.disabled = true;
+    }
+  }
+  
+  function loadCustomFirmware(name, binaryData) {
+    bootloaderData = null;
+    partitionsData = null;
+    selectedFirmwareData = binaryData;
+    selectedFirmwareName = name;
+    activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${name} (${(binaryData.length/1024).toFixed(2)} KB) [custom]`;
+    addLog(`Custom firmware ready: ${name} (${binaryData.length} bytes)`, "success");
+    
+    document.querySelectorAll('.fw-item').forEach(el => {
+      if (el.getAttribute('data-custom') === 'true' && el.getAttribute('data-fw-name') === name) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+    
+    if (!flashingInProgress && selectedPort) flashBtn.disabled = false;
+    else flashBtn.disabled = true;
+  }
+
   async function selectSerialPort() {
     if (flashingInProgress) { addLog("Flashing in progress, cannot change port", "error"); return; }
     if (!('serial' in navigator)) { addLog("Web Serial API not supported. Use Chrome/Edge.", "error"); return; }
@@ -556,13 +632,15 @@
     if (flashingInProgress) return;
     if (!selectedPort) { addLog("No serial port selected", "error"); return; }
     if (!selectedFirmwareData) { addLog("No firmware selected", "error"); return; }
+    
     flashingInProgress = true;
     setControlsEnabled(false);
     let transport = null;
     let esptoolInstance = null;
     let success = false;
+    
     try {
-      addLog(`Preparing to flash ${selectedFirmwareName} (${(selectedFirmwareData.length/1024).toFixed(2)} KB)`, "info");
+      addLog(`Preparing to flash ${selectedFirmwareName}`, "info");
       transport = new Transport(selectedPort);
       esptoolInstance = new ESPLoader({
         transport: transport,
@@ -573,41 +651,43 @@
           write: (msg) => addLog(String(msg !== undefined ? msg : ""), "info")
         }
       });
+      
       await esptoolInstance.main();
       addLog("Connected to ESP device", "success");
-      addLog("Starting HARD FULL FLASH ERASE (all sectors will be overwritten with 0xFF)", "info");
-      try {
-        if (typeof esptoolInstance.eraseFlash === 'function') {
-          await esptoolInstance.eraseFlash();
-          addLog("Full flash erase completed successfully", "success");
-        } else {
-          addLog("eraseFlash method not available, performing full erase via writeFlash with eraseAll", "info");
-          const dummyData = new Uint8Array(1024);
-          const dummyBinary = uint8ToBinaryString(dummyData);
-          await esptoolInstance.writeFlash({
-            fileArray: [{ data: dummyBinary, address: 0 }],
-            flashSize: "keep",
-            eraseAll: true,
-            compress: false
-          });
-          addLog("Full flash erase via writeFlash completed", "success");
-        }
-      } catch (eraseErr) {
-        addLog(`Full erase warning: ${eraseErr.message}, continuing with firmware write`, "error");
+      
+      addLog("Performing full flash erase...", "info");
+      await esptoolInstance.eraseFlash();
+      addLog("Flash fully erased", "success");
+      
+      const fileArray = [];
+      
+      if (bootloaderData && bootloaderData.length > 0) {
+        fileArray.push({
+          data: uint8ToBinaryString(bootloaderData),
+          address: 0x1000
+        });
+        addLog(`Adding bootloader @ 0x1000 (${bootloaderData.length} bytes)`, "info");
       }
-      const flashAddress = 0x10000;
-      addLog(`Writing firmware to address 0x${flashAddress.toString(16)} with additional sector verification`, "info");
-      const binaryData = uint8ToBinaryString(selectedFirmwareData);
+      
+      if (partitionsData && partitionsData.length > 0) {
+        fileArray.push({
+          data: uint8ToBinaryString(partitionsData),
+          address: 0x8000
+        });
+        addLog(`Adding partition table @ 0x8000 (${partitionsData.length} bytes)`, "info");
+      }
+      
+      fileArray.push({
+        data: uint8ToBinaryString(selectedFirmwareData),
+        address: 0x10000
+      });
+      addLog(`Adding firmware @ 0x10000 (${selectedFirmwareData.length} bytes)`, "info");
+      
       await esptoolInstance.writeFlash({
-        fileArray: [
-          {
-            data: binaryData,
-            address: flashAddress
-          }
-        ],
+        fileArray: fileArray,
         flashSize: "keep",
-        eraseAll: false,
         compress: true,
+        eraseAll: false,
         reportProgress: (sent, total) => {
           const percent = (sent / total) * 100;
           if (Math.floor(percent) % 10 === 0 && percent < 100 && percent > 0) {
@@ -615,20 +695,23 @@
           }
         }
       });
-      addLog("Firmware successfully written after full destructive erase", "success");
+      
+      addLog("Firmware successfully flashed", "success");
+      
       try {
         await esptoolInstance.after();
         addLog("Device rebooted", "success");
       } catch (e) {
         addLog("Auto reset not supported, please press RESET button on device", "info");
       }
+      
       success = true;
     } catch(err) {
       addLog(`Flashing error: ${err.message || String(err)}`, "error");
       success = false;
     } finally {
       flashingInProgress = false;
-      if (esptoolInstance) {
+      if (esptoolInstance && esptoolInstance.transport) {
         try { await esptoolInstance.transport.disconnect(); } catch(e) {}
       }
       setControlsEnabled(true);
@@ -637,60 +720,23 @@
     }
   }
 
-  async function loadFirmware(name, file, binaryData = null) {
-    addLog(`Loading ${name}...`, "info");
-    try {
-      let data;
-      if (binaryData) {
-        data = binaryData;
-      } else {
-        const resp = await fetch(file);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const buf = await resp.arrayBuffer();
-        data = new Uint8Array(buf);
-      }
-      selectedFirmwareData = data;
-      selectedFirmwareName = name;
-      selectedFirmwareFile = file;
-      activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> Active firmware: <strong>${name}</strong> (${(data.length/1024).toFixed(2)} KB)`;
-      addLog(`Firmware ready: ${name} (${data.length} bytes)`, "success");
-      document.querySelectorAll('.fw-item').forEach(el => {
-        if ((el.getAttribute('data-file') === file && !binaryData) || (binaryData && el.getAttribute('data-custom') === 'true' && el.getAttribute('data-fw') === name)) {
-          el.classList.add('active');
-        } else {
-          el.classList.remove('active');
-        }
-      });
-      if (!flashingInProgress && selectedPort) flashBtn.disabled = false;
-      else if (!flashingInProgress) flashBtn.disabled = true;
-    } catch(e) {
-      addLog(`Failed to load ${name}: ${e.message}`, "error");
-      if (!binaryData) {
-        selectedFirmwareData = null;
-        activeFirmwareDisplay.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Failed to load ${name}`;
-        flashBtn.disabled = true;
-      }
-    }
-  }
-
-  function addCustomFirmwareToList(name, binaryData, fileObj) {
-    const existing = Array.from(firmwareListContainer.querySelectorAll('.fw-item')).find(item => item.getAttribute('data-fw') === name);
+  function addCustomFirmwareToList(name, binaryData) {
+    const existing = Array.from(firmwareListContainer.querySelectorAll('.fw-item')).find(item => item.getAttribute('data-fw-name') === name && item.getAttribute('data-custom') === 'true');
     if (existing) {
       existing.click();
       return;
     }
     const fwDiv = document.createElement('div');
     fwDiv.className = 'fw-item';
-    fwDiv.setAttribute('data-fw', name);
-    fwDiv.setAttribute('data-file', 'custom');
     fwDiv.setAttribute('data-custom', 'true');
+    fwDiv.setAttribute('data-fw-name', name);
     fwDiv.innerHTML = `
       <div class="fw-name">${name} <i class="fas fa-file-upload"></i></div>
       <div class="fw-desc">Custom firmware uploaded by user</div>
     `;
     fwDiv.addEventListener('click', async () => {
       if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
-      await loadFirmware(name, 'custom', binaryData);
+      loadCustomFirmware(name, binaryData);
       if (window.innerWidth <= 768) closeSidebar();
     });
     firmwareListContainer.prepend(fwDiv);
@@ -704,7 +750,7 @@
       const uint8Array = new Uint8Array(arrayBuffer);
       const fileName = file.name.replace(/\.bin$/i, '');
       const displayName = `${fileName} (custom)`;
-      await addCustomFirmwareToList(displayName, uint8Array, file);
+      addCustomFirmwareToList(displayName, uint8Array);
       addLog(`Custom firmware loaded: ${file.name}`, "success");
     };
     reader.onerror = () => {
@@ -732,35 +778,39 @@
   function filterFirmwares() {
     const term = searchInput.value.toLowerCase();
     document.querySelectorAll('.fw-item').forEach(item => {
-      const name = item.getAttribute('data-fw').toLowerCase();
-      item.style.display = name.includes(term) ? '' : 'none';
+      let name = '';
+      if (item.getAttribute('data-manifest')) {
+        name = item.querySelector('.fw-name')?.innerText?.split(' ')[0] || '';
+      } else if (item.getAttribute('data-custom') === 'true') {
+        name = item.getAttribute('data-fw-name') || '';
+      }
+      item.style.display = name.toLowerCase().includes(term) ? '' : 'none';
     });
   }
 
-  async function loadDescriptionOnly() {
-    try {
-      const descResponse = await fetch('Lib/NanoDrive/desc.txt');
-      if (descResponse.ok) {
-        const descText = await descResponse.text();
-        if (defaultFwDescSpan) defaultFwDescSpan.innerText = descText.trim();
-        else if (defaultFwItem) defaultFwItem.querySelector('.fw-desc').innerText = descText.trim();
-      } else {
-        if (defaultFwDescSpan) defaultFwDescSpan.innerText = 'High-performance firmware for NanoDrive platform';
-      }
-    } catch (e) {
-      if (defaultFwDescSpan) defaultFwDescSpan.innerText = 'Advanced firmware with real-time processing';
+  async function initDefaultFirmware() {
+    const defaultItem = document.querySelector('.fw-item[data-manifest]');
+    if (defaultItem) {
+      const manifestPath = defaultItem.getAttribute('data-manifest');
+      try {
+        const manifestResp = await fetch(manifestPath);
+        if (manifestResp.ok) {
+          const manifest = await manifestResp.json();
+          const nameElem = defaultItem.querySelector('.fw-name');
+          if (nameElem) nameElem.innerHTML = `${manifest.name} <i class="fas fa-microchip"></i>`;
+          const descElem = defaultItem.querySelector('.fw-desc');
+          if (descElem) descElem.innerText = manifest.description || `${manifest.type} firmware`;
+        }
+      } catch(e) {}
+      await loadFirmwareFromManifest(manifestPath);
     }
   }
 
-  document.querySelectorAll('.fw-item').forEach(item => {
+  document.querySelectorAll('.fw-item[data-manifest]').forEach(item => {
     item.addEventListener('click', async () => {
       if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
-      const name = item.getAttribute('data-fw');
-      const file = item.getAttribute('data-file');
-      if (item.getAttribute('data-custom') === 'true') {
-        return;
-      }
-      await loadFirmware(name, file);
+      const manifestPath = item.getAttribute('data-manifest');
+      await loadFirmwareFromManifest(manifestPath);
       if (window.innerWidth <= 768) closeSidebar();
     });
   });
@@ -771,8 +821,8 @@
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
   
-  await loadDescriptionOnly();
-  addLog("WebFlasher ready. HARD FULL FLASH ERASE enabled before each write.", "info");
+  await initDefaultFirmware();
+  addLog("WebFlasher ready. Full erase + multi-region flash (0x1000 boot, 0x8000 part, 0x10000 app)", "info");
 </script>
 </body>
 </html>
