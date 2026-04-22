@@ -436,6 +436,10 @@
   let currentFlashFreq = 'keep';
   let currentFlashSize = 'keep';
 
+  const VALID_FLASH_MODES = ['qio', 'dio', 'qout', 'dout'];
+  const VALID_FLASH_FREQS = ['80m', '40m', '26m', '20m'];
+  const VALID_FLASH_SIZES = ['1MB', '2MB', '4MB', '8MB', '16MB', 'detect'];
+
   const firmwareCache = new Map();
 
   const selectPortBtn = document.getElementById('selectPortBtn');
@@ -654,6 +658,22 @@
     
     try {
       addLog(`Preparing to flash ${currentFirmwareName}`, "info");
+      
+      let safeMode = currentFlashMode;
+      if (!VALID_FLASH_MODES.includes(safeMode)) safeMode = 'keep';
+      let safeFreq = currentFlashFreq;
+      if (!VALID_FLASH_FREQS.includes(safeFreq)) safeFreq = 'keep';
+      let safeSize = currentFlashSize;
+      if (!VALID_FLASH_SIZES.includes(safeSize)) safeSize = 'detect';
+      
+      if (currentFirmwareCacheKey === null) {
+        if (!VALID_FLASH_MODES.includes(safeMode)) safeMode = 'dio';
+        if (!VALID_FLASH_FREQS.includes(safeFreq)) safeFreq = '80m';
+        if (!VALID_FLASH_SIZES.includes(safeSize)) safeSize = 'detect';
+      }
+      
+      addLog(`Flash settings: mode=${safeMode}, freq=${safeFreq}, size=${safeSize}`, "info");
+      
       transport = new Transport(selectedPort);
       esptoolInstance = new ESPLoader({
         transport: transport,
@@ -693,13 +713,11 @@
         address: 0x10000
       });
       
-      addLog(`Flashing with settings: mode=${currentFlashMode}, freq=${currentFlashFreq}, size=${currentFlashSize}`, "info");
-      
       await esptoolInstance.writeFlash({
         fileArray: fileArray,
-        flashSize: currentFlashSize,
-        flashMode: currentFlashMode,
-        flashFreq: currentFlashFreq,
+        flashSize: safeSize,
+        flashMode: safeMode,
+        flashFreq: safeFreq,
         compress: true,
         eraseAll: false
       });
@@ -749,11 +767,11 @@
       currentAppData = binaryData;
       currentFirmwareName = name;
       currentFirmwareCacheKey = null;
-      currentFlashMode = 'keep';
-      currentFlashFreq = 'keep';
-      currentFlashSize = 'keep';
-      activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${name} (${(binaryData.length/1024).toFixed(2)} KB) [custom]`;
-      addLog(`Custom firmware selected: ${name}`, "success");
+      currentFlashMode = 'dio';
+      currentFlashFreq = '80m';
+      currentFlashSize = 'detect';
+      activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${name} (${(binaryData.length/1024).toFixed(2)} KB) [custom] | flash: dio/80m/detect`;
+      addLog(`Custom firmware selected: ${name} (default flash: dio/80m/detect)`, "success");
       document.querySelectorAll('.fw-item').forEach(el => {
         if (el.getAttribute('data-custom') === 'true' && el.getAttribute('data-fw-name') === name) {
           el.classList.add('active');
