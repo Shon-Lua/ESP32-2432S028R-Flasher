@@ -401,9 +401,9 @@
       <button id="addCustomFirmwareBtn" class="btn-plus"><i class="fas fa-plus"></i></button>
     </div>
     <div class="firmware-list" id="firmwareListContainer">
-      <div class="fw-item" data-fw="NanoDrive" data-file="NanoDrive.bin" data-custom="false">
-        <div class="fw-name">NanoDrive <i class="fas fa-calculator"></i></div>
-        <div class="fw-desc">Extensive calculator firmware: high‑precision math, scripting engine, real‑time data logging.</div>
+      <div class="fw-item" data-fw="NanoDrive" data-file="Lib/NanoDrive/NanoDrive.bin" data-custom="false">
+        <div class="fw-name">NanoDrive <i class="fas fa-microchip"></i></div>
+        <div class="fw-desc" id="defaultFwDesc">Loading description...</div>
       </div>
     </div>
   </div>
@@ -452,14 +452,12 @@
   const { ESPLoader, Transport } = esptoolModule;
 
   async function preloadResources() {
-    const logoPromise = new Promise((resolve) => {
+    await new Promise((resolve) => {
       const img = new Image();
       img.onload = resolve;
       img.onerror = resolve;
       img.src = "Logo.png";
     });
-    const firmwarePromise = fetch("NanoDrive.bin").catch(() => {});
-    await Promise.all([logoPromise, firmwarePromise]);
   }
 
   await preloadResources();
@@ -487,6 +485,8 @@
   const addCustomBtn = document.getElementById('addCustomFirmwareBtn');
   const customFileInput = document.getElementById('customFirmwareInput');
   const firmwareListContainer = document.getElementById('firmwareListContainer');
+  const defaultFwItem = document.querySelector('.fw-item[data-fw="NanoDrive"]');
+  const defaultFwDescSpan = document.getElementById('defaultFwDesc');
 
   function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
   function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
@@ -717,6 +717,25 @@
     });
   }
 
+  async function loadDefaultFirmwareWithDescription() {
+    try {
+      const descResponse = await fetch('Lib/NanoDrive/desc.txt');
+      if (descResponse.ok) {
+        const descText = await descResponse.text();
+        if (defaultFwDescSpan) defaultFwDescSpan.innerText = descText.trim();
+        else if (defaultFwItem) defaultFwItem.querySelector('.fw-desc').innerText = descText.trim();
+      } else {
+        if (defaultFwDescSpan) defaultFwDescSpan.innerText = 'High-performance firmware for NanoDrive platform';
+      }
+    } catch (e) {
+      if (defaultFwDescSpan) defaultFwDescSpan.innerText = 'Advanced firmware with real-time processing';
+    }
+    
+    if (defaultFwItem && !defaultFwItem.classList.contains('active')) {
+      await loadFirmware('NanoDrive', 'Lib/NanoDrive/NanoDrive.bin');
+    }
+  }
+
   document.querySelectorAll('.fw-item').forEach(item => {
     item.addEventListener('click', async () => {
       if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
@@ -735,6 +754,8 @@
   flashBtn.addEventListener('click', startFlashing);
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
+  
+  await loadDefaultFirmwareWithDescription();
   addLog("WebFlasher ready. Select firmware, select serial port, then click FLASH.", "info");
 </script>
 </body>
