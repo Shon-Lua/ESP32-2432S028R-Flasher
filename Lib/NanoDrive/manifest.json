@@ -1,6 +1,7 @@
 {
   "name": "NanoDrive",
   "type": "full",
+  "basePath": "Lib/NanoDrive/",
   "files": {
     "bootloader": "bootloader.bin",
     "partitions": "partitions.bin",
