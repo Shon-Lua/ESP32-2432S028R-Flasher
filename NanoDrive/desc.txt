@@ -1,1 +1,0 @@
-A versatile calculator with trigonometry, graphing, quadratic equations, and Bluetooth chat
