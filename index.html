@@ -532,8 +532,12 @@
       });
       updateProgress(100);
       addLog("Firmware successfully written!", "success");
-      await esptoolInstance.hardReset();
-      addLog("Device rebooted", "success");
+      try {
+        await esptoolInstance.after();
+        addLog("Device rebooted", "success");
+      } catch (e) {
+        addLog("Auto reset not supported, please press RESET button on device", "info");
+      }
       success = true;
     } catch(err) {
       addLog(`Flashing error: ${err.message || String(err)}`, "error");
