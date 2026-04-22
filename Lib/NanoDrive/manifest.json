@@ -7,10 +7,5 @@
     "partitions": "partitions.bin",
     "app": "NanoDrive.bin",
     "desc": "desc.txt"
-  },
-  "flash": {
-    "mode": "qio",
-    "freq": "80m",
-    "size": "4MB"
   }
 }
