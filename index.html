@@ -121,23 +121,6 @@
     .search-box input:focus {
       border-color: #ffffff;
     }
-    .btn-plus {
-      background: #0b0b0b;
-      border: 1px solid #262626;
-      width: 38px;
-      height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: white;
-      font-size: 1rem;
-      transition: all 0.2s ease;
-    }
-    .btn-plus:hover {
-      border-color: #ffffff;
-      background: #151515;
-    }
     .firmware-list {
       display: flex;
       flex-direction: column;
@@ -362,7 +345,6 @@
         <i class="fas fa-search"></i>
         <input type="text" id="searchFirmware" placeholder="Search firmware...">
       </div>
-      <button id="addCustomFirmwareBtn" class="btn-plus"><i class="fas fa-plus"></i></button>
     </div>
     <div class="firmware-list" id="firmwareListContainer"></div>
   </div>
@@ -389,8 +371,6 @@
     </div>
   </div>
 </div>
-
-<input type="file" id="customFirmwareInput" accept=".bin" style="display: none;">
 
 <script type="importmap">
   {
@@ -425,8 +405,6 @@
   const overlay = document.getElementById('sidebarOverlay');
   const menuToggle = document.getElementById('menuToggleBtn');
   const searchInput = document.getElementById('searchFirmware');
-  const addCustomBtn = document.getElementById('addCustomFirmwareBtn');
-  const customFileInput = document.getElementById('customFirmwareInput');
   const firmwareListContainer = document.getElementById('firmwareListContainer');
 
   function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
@@ -680,85 +658,10 @@
     }
   }
 
-  function addCustomFirmwareToList(name, binaryData) {
-    const existing = Array.from(firmwareListContainer.querySelectorAll('.fw-item')).find(item => item.getAttribute('data-custom') === 'true' && item.getAttribute('data-fw-name') === name);
-    if (existing) {
-      existing.click();
-      return;
-    }
-    const fwDiv = document.createElement('div');
-    fwDiv.className = 'fw-item';
-    fwDiv.setAttribute('data-custom', 'true');
-    fwDiv.setAttribute('data-fw-name', name);
-    fwDiv.innerHTML = `
-      <div class="fw-name">${name} <i class="fas fa-file-upload"></i></div>
-      <div class="fw-desc">Custom firmware uploaded by user</div>
-    `;
-    fwDiv.addEventListener('click', async () => {
-      if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
-      currentBootloaderData = null;
-      currentPartitionsData = null;
-      currentAppData = binaryData;
-      currentFirmwareName = name;
-      currentFirmwareCacheKey = null;
-      activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${name} (${(binaryData.length/1024).toFixed(2)} KB) [custom]`;
-      addLog(`Custom firmware selected: ${name}`, "success");
-      document.querySelectorAll('.fw-item').forEach(el => {
-        if (el.getAttribute('data-custom') === 'true' && el.getAttribute('data-fw-name') === name) {
-          el.classList.add('active');
-        } else {
-          el.classList.remove('active');
-        }
-      });
-      if (!flashingInProgress && selectedPort) flashBtn.disabled = false;
-      else flashBtn.disabled = true;
-      if (window.innerWidth <= 768) closeSidebar();
-    });
-    firmwareListContainer.prepend(fwDiv);
-    fwDiv.click();
-  }
-
-  function handleCustomFirmware(file) {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const arrayBuffer = e.target.result;
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const fileName = file.name.replace(/\.bin$/i, '');
-      const displayName = `${fileName} (custom)`;
-      addCustomFirmwareToList(displayName, uint8Array);
-      addLog(`Custom firmware loaded: ${file.name}`, "success");
-    };
-    reader.onerror = () => {
-      addLog("Failed to read custom firmware file", "error");
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  addCustomBtn.addEventListener('click', () => {
-    if (flashingInProgress) {
-      addLog("Cannot load custom firmware while flashing", "error");
-      return;
-    }
-    customFileInput.click();
-  });
-
-  customFileInput.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      handleCustomFirmware(file);
-    }
-    customFileInput.value = '';
-  });
-
   function filterFirmwares() {
     const term = searchInput.value.toLowerCase();
-    document.querySelectorAll('.fw-item').forEach(item => {
-      let name = '';
-      if (item.getAttribute('data-manifest')) {
-        name = item.querySelector('.fw-name')?.innerText?.split(' ')[0] || '';
-      } else if (item.getAttribute('data-custom') === 'true') {
-        name = item.getAttribute('data-fw-name') || '';
-      }
+    document.querySelectorAll('.fw-item[data-manifest]').forEach(item => {
+      let name = item.querySelector('.fw-name')?.innerText?.split(' ')[0] || '';
       item.style.display = name.toLowerCase().includes(term) ? '' : 'none';
     });
   }
@@ -817,14 +720,6 @@
         if (window.innerWidth <= 768) closeSidebar();
       });
     });
-    
-    const firstManifestItem = document.querySelector('.fw-item[data-manifest]');
-    if (firstManifestItem) {
-      const firstManifestPath = firstManifestItem.getAttribute('data-manifest');
-      if (firstManifestPath && firmwareCache.has(firstManifestPath)) {
-        await selectFirmwareFromCache(firstManifestPath);
-      }
-    }
   }
 
   async function preloadResources() {
