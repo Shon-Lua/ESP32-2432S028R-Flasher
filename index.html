@@ -17,14 +17,20 @@
       -moz-user-select: none;
       -ms-user-select: none;
     }
+
+    html, body {
+      height: 100%;
+    }
+
     body {
       background: radial-gradient(circle at 20% 30%, #0a0a0a, #000000);
       font-family: 'Inter', sans-serif;
       color: #ffffff;
       line-height: 1.5;
       overflow: hidden;
-      height: 100vh;
+      height: calc(var(--vh, 1vh) * 100);
     }
+
     .splash {
       position: fixed;
       top: 0;
@@ -39,7 +45,15 @@
       justify-content: center;
       backdrop-filter: blur(2px);
       transition: opacity 0.5s ease;
+      opacity: 1;
+      pointer-events: auto;
     }
+
+    .splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .splash-logo {
       width: 200px;
       height: auto;
@@ -47,10 +61,12 @@
       animation: pulseGlow 1.8s infinite alternate;
       margin-bottom: 2rem;
     }
+
     @keyframes pulseGlow {
       0% { filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.3)); transform: scale(0.98);}
       100% { filter: drop-shadow(0 0 28px rgba(0, 212, 255, 0.7)); transform: scale(1.02);}
     }
+
     .splash-text {
       font-size: 0.85rem;
       font-weight: 400;
@@ -61,6 +77,7 @@
       background-clip: text;
       color: transparent;
     }
+
     .sidebar-overlay {
       position: fixed;
       top: 0;
@@ -73,15 +90,18 @@
       display: none;
       transition: opacity 0.2s;
     }
+
     .sidebar-overlay.active {
       display: block;
     }
+
     .app-wrapper {
       display: none;
-      height: 100vh;
+      height: 100%;
       overflow: hidden;
       position: relative;
     }
+
     .sidebar {
       width: 300px;
       background: rgba(8, 8, 12, 0.92);
@@ -94,6 +114,7 @@
       overflow-y: auto;
       box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6);
     }
+
     .sidebar h2 {
       font-size: 1.3rem;
       font-weight: 600;
@@ -109,16 +130,19 @@
       background-clip: text;
       color: transparent;
     }
+
     .search-wrapper {
       display: flex;
       gap: 0.5rem;
       margin-bottom: 2rem;
       align-items: center;
     }
+
     .search-box {
       flex: 1;
       position: relative;
     }
+
     .search-box i {
       position: absolute;
       left: 14px;
@@ -128,6 +152,7 @@
       font-size: 0.9rem;
       pointer-events: none;
     }
+
     .search-box input {
       width: 100%;
       background: rgba(20, 20, 30, 0.7);
@@ -142,16 +167,19 @@
       transition: all 0.2s;
       font-weight: 500;
     }
+
     .search-box input:focus {
       border-color: #6c6eff;
       box-shadow: 0 0 12px rgba(108, 110, 255, 0.3);
       background: rgba(10, 10, 20, 0.9);
     }
+
     .firmware-list {
       display: flex;
       flex-direction: column;
       gap: 1rem;
     }
+
     .fw-item {
       background: rgba(18, 18, 28, 0.7);
       backdrop-filter: blur(4px);
@@ -161,18 +189,21 @@
       transition: all 0.25s ease;
       cursor: pointer;
     }
+
     .fw-item:hover {
       transform: translateX(6px);
       border-color: #8e92ff;
       background: rgba(30, 30, 50, 0.9);
       box-shadow: -4px 6px 18px rgba(0, 0, 0, 0.5);
     }
+
     .fw-item.active {
       border-left: 4px solid #6c6eff;
       background: linear-gradient(135deg, rgba(40, 40, 70, 0.9), rgba(25, 25, 45, 0.95));
       box-shadow: 0 0 14px rgba(108, 110, 255, 0.3);
       border-radius: 20px;
     }
+
     .fw-name {
       font-weight: 700;
       font-size: 1rem;
@@ -182,16 +213,19 @@
       align-items: center;
       letter-spacing: -0.2px;
     }
+
     .fw-name i {
       font-size: 0.9rem;
       color: #a0a6ff;
     }
+
     .fw-desc {
       font-size: 0.7rem;
       color: #b9b9e6;
       line-height: 1.4;
       font-weight: 400;
     }
+
     .main-content {
       flex: 1;
       padding: 1.8rem;
@@ -202,6 +236,7 @@
       overflow-y: auto;
       background: radial-gradient(ellipse at 70% 20%, rgba(20, 20, 35, 0.2), transparent);
     }
+
     .mobile-menu-btn {
       display: none;
       background: rgba(15, 15, 25, 0.8);
@@ -219,10 +254,12 @@
       border-radius: 20px;
       transition: 0.2s;
     }
+
     .mobile-menu-btn:hover {
       background: rgba(80, 80, 140, 0.5);
       border-color: #aaaaff;
     }
+
     .flasher-card {
       background: rgba(12, 12, 20, 0.65);
       backdrop-filter: blur(14px);
@@ -236,6 +273,7 @@
       min-height: 0;
       transition: all 0.2s;
     }
+
     h3 {
       font-size: 1.4rem;
       margin-bottom: 1.4rem;
@@ -249,6 +287,7 @@
       background-clip: text;
       color: transparent;
     }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -269,10 +308,12 @@
       align-self: flex-start;
       flex-shrink: 0;
     }
+
     .btn i {
       font-size: 1rem;
       transition: transform 0.2s;
     }
+
     .btn:hover {
       background: #ffffff;
       color: #0a0a1a;
@@ -280,10 +321,12 @@
       box-shadow: 0 6px 20px rgba(100, 100, 255, 0.4);
       transform: translateY(-2px);
     }
+
     .btn:hover i {
       color: #0a0a1a;
       transform: scale(1.05);
     }
+
     .port-section {
       display: flex;
       flex-wrap: wrap;
@@ -296,6 +339,7 @@
       border: 1px solid rgba(90, 90, 140, 0.4);
       flex-shrink: 0;
     }
+
     .port-status {
       font-size: 0.8rem;
       font-family: 'Inter', monospace;
@@ -308,6 +352,7 @@
       word-break: break-all;
       letter-spacing: 0.2px;
     }
+
     .active-fw-indicator {
       background: rgba(20, 25, 45, 0.8);
       padding: 0.8rem 1.2rem;
@@ -319,6 +364,7 @@
       backdrop-filter: blur(5px);
       flex-shrink: 0;
     }
+
     .log-terminal {
       background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(10px);
@@ -333,7 +379,9 @@
       overflow-y: auto;
       line-height: 1.5;
       box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
+      margin-bottom: 0;
     }
+
     .log-line {
       padding: 0.25rem 0;
       border-bottom: 1px solid rgba(75, 75, 110, 0.25);
@@ -341,16 +389,19 @@
       gap: 0.8rem;
       font-size: 0.7rem;
     }
+
     .log-prefix {
       color: #8e9eff;
       font-weight: 600;
     }
+
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
       transform: none;
       filter: grayscale(0.1);
     }
+
     @media (max-width: 768px) {
       .mobile-menu-btn {
         display: flex;
@@ -371,6 +422,7 @@
       .main-content {
         padding: 1rem;
         padding-top: 0.5rem;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
       }
       .flasher-card {
         padding: 1.2rem;
@@ -388,6 +440,7 @@
         width: 150px;
       }
     }
+
     ::-webkit-scrollbar {
       width: 5px;
     }
@@ -480,6 +533,14 @@
   const menuToggle = document.getElementById('menuToggleBtn');
   const searchInput = document.getElementById('searchFirmware');
   const firmwareListContainer = document.getElementById('firmwareListContainer');
+
+  function setViewportHeight() {
+    let vh = window.innerHeight;
+    document.documentElement.style.setProperty('--vh', `${vh * 0.01}px`);
+  }
+
+  window.addEventListener('resize', setViewportHeight);
+  setViewportHeight();
 
   function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
   function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
@@ -843,9 +904,12 @@
     } catch (err) {
       addLog(`Initialization error: ${err.message}`, "error");
     }
-    if (splash) splash.style.display = 'none';
-    if (appWrapper) appWrapper.style.display = 'flex';
-    addLog("WebFlasher ready. Select firmware from library, then choose port and flash.", "info");
+    splash.classList.add('hidden');
+    setTimeout(() => {
+      splash.style.display = 'none';
+      if (appWrapper) appWrapper.style.display = 'flex';
+      addLog("WebFlasher ready. Select firmware from library, then choose port and flash.", "info");
+    }, 500);
   }
 
   boot();
