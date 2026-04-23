@@ -657,18 +657,23 @@
   }
 
   async function hardResetDevice(transport) {
+    if (!transport || typeof transport.setSignals !== 'function') {
+      addLog("Signal control not supported by browser or driver. Please press RESET button manually.", "error");
+      return false;
+    }
     try {
-      if (transport && transport.setSignals) {
-        addLog("Triggering hardware reset via GPIO (DTR/RTS toggle)...", "info");
-        await transport.setSignals({ dataTerminalReady: false, requestToSend: false });
-        await new Promise(r => setTimeout(r, 100));
-        await transport.setSignals({ dataTerminalReady: true, requestToSend: false });
-        await new Promise(r => setTimeout(r, 100));
-        await transport.setSignals({ dataTerminalReady: false, requestToSend: false });
-        addLog("Reset signal sent, device should reboot", "success");
-      }
-    } catch(e) {
-      addLog(`Hardware reset failed: ${e.message}`, "error");
+      addLog("Attempting automatic hardware reset (DTR/RTS sequence)...", "info");
+      await transport.setSignals({ dataTerminalReady: false, requestToSend: false });
+      await new Promise(r => setTimeout(r, 50));
+      await transport.setSignals({ dataTerminalReady: false, requestToSend: true });
+      await new Promise(r => setTimeout(r, 50));
+      await transport.setSignals({ dataTerminalReady: false, requestToSend: false });
+      await new Promise(r => setTimeout(r, 100));
+      addLog("Reset sequence completed. If device did not reboot, please press RESET button manually.", "success");
+      return true;
+    } catch (e) {
+      addLog(`Automatic reset failed: ${e.message}. Please reset manually.`, "error");
+      return false;
     }
   }
 
@@ -728,7 +733,6 @@
       });
       
       addLog("Firmware successfully written", "success");
-      
       await hardResetDevice(transport);
       
       try {
@@ -738,7 +742,7 @@
       }
       
       success = true;
-      addLog("Device reset completed — firmware active", "success");
+      addLog("Flashing completed. Device should now run new firmware.", "success");
     } catch(err) {
       addLog(`Flashing error: ${err.message || String(err)}`, "error");
       success = false;
