@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <title>FLASHER</title>
   <link rel="icon" href="Logo.png" type="image/png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     * {
@@ -18,7 +18,7 @@
       -ms-user-select: none;
     }
     body {
-      background-color: #000000;
+      background: radial-gradient(ellipse at 30% 40%, #0a0c12 0%, #000000 100%);
       font-family: 'Inter', sans-serif;
       color: #ffffff;
       line-height: 1.5;
@@ -37,17 +37,29 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(20px);
+      transition: opacity 0.5s ease-out;
     }
     .splash-logo {
-      width: 200px;
+      width: 220px;
       height: auto;
-      filter: drop-shadow(0 0 15px rgba(255,255,255,0.25));
+      filter: drop-shadow(0 0 25px rgba(255,255,255,0.3)) drop-shadow(0 0 8px rgba(0,255,255,0.4));
+      animation: gentlePulse 1.8s infinite alternate;
       margin-bottom: 2rem;
+    }
+    @keyframes gentlePulse {
+      0% { opacity: 0.7; transform: scale(0.98); filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));}
+      100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 35px rgba(0,255,255,0.5));}
     }
     .splash-text {
       font-size: 0.9rem;
-      color: #cccccc;
-      letter-spacing: 1px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #aaa, #fff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-transform: uppercase;
     }
     .sidebar-overlay {
       position: fixed;
@@ -55,9 +67,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
       z-index: 998;
       display: none;
+      transition: all 0.3s ease;
     }
     .sidebar-overlay.active {
       display: block;
@@ -69,30 +83,36 @@
       position: relative;
     }
     .sidebar {
-      width: 280px;
-      background: #050505;
-      border-right: 1px solid #1f1f1f;
+      width: 300px;
+      background: rgba(8, 8, 14, 0.75);
+      backdrop-filter: blur(16px);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
       padding: 2rem 1rem;
       flex-shrink: 0;
-      transition: transform 0.25s ease;
+      transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
       z-index: 999;
       overflow-y: auto;
+      box-shadow: 12px 0 35px rgba(0,0,0,0.4);
     }
     .sidebar h2 {
-      font-size: 1.2rem;
-      font-weight: 500;
-      letter-spacing: -0.2px;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid #2a2a2a;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      background: linear-gradient(120deg, #ffffff, #aaaaff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
     .search-wrapper {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.8rem;
       align-items: center;
     }
     .search-box {
@@ -101,68 +121,81 @@
     }
     .search-box i {
       position: absolute;
-      left: 12px;
+      left: 14px;
       top: 50%;
       transform: translateY(-50%);
       color: #aaa;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
+      transition: color 0.2s;
     }
     .search-box input {
       width: 100%;
-      background: #0b0b0b;
-      border: 1px solid #262626;
-      padding: 0 0.6rem 0 2rem;
+      background: rgba(20, 20, 28, 0.7);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 0 1rem 0 2.4rem;
       color: white;
       font-family: 'Inter', sans-serif;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       outline: none;
-      height: 38px;
+      height: 44px;
+      border-radius: 18px;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s ease;
     }
     .search-box input:focus {
       border-color: #ffffff;
+      background: rgba(28, 28, 36, 0.9);
+      box-shadow: 0 0 12px rgba(255,255,255,0.1);
     }
     .firmware-list {
       display: flex;
       flex-direction: column;
-      gap: 1.2rem;
+      gap: 1rem;
     }
     .fw-item {
-      background: #0b0b0b;
-      border: 1px solid #262626;
-      padding: 1rem;
-      transition: all 0.2s ease;
+      background: rgba(12, 12, 18, 0.7);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.05);
+      padding: 1rem 1.2rem;
+      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.4, 1);
       cursor: pointer;
+      border-radius: 24px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     .fw-item:hover {
-      border-color: #4a4a4a;
-      background: #0f0f0f;
+      border-color: rgba(255,255,255,0.35);
+      background: rgba(28, 28, 38, 0.8);
+      transform: translateX(6px) scale(1.01);
     }
     .fw-item.active {
       border-left: 3px solid #ffffff;
-      background: #111111;
-      border-color: #ffffff #262626 #262626 #ffffff;
+      background: linear-gradient(135deg, rgba(40,40,55,0.9), rgba(20,20,32,0.9));
+      border-color: #ffffff rgba(255,255,255,0.2) rgba(255,255,255,0.1) #ffffff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
     }
     .fw-name {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 1rem;
       margin-bottom: 0.4rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      letter-spacing: -0.2px;
     }
     .fw-name i {
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       color: #ffffff;
+      opacity: 0.8;
     }
     .fw-desc {
       font-size: 0.7rem;
-      color: #aaaaaa;
-      line-height: 1.3;
+      color: #bcbcbc;
+      line-height: 1.35;
     }
     .main-content {
       flex: 1;
-      padding: 1.5rem;
-      padding-top: 1rem;
+      padding: 1.8rem;
+      padding-top: 1.2rem;
       display: flex;
       flex-direction: column;
       min-width: 0;
@@ -170,118 +203,154 @@
     }
     .mobile-menu-btn {
       display: none;
-      background: transparent;
-      border: 1px solid #ffffff;
-      width: 42px;
-      height: 42px;
+      background: rgba(20,20,28,0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.2);
+      width: 48px;
+      height: 48px;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      margin-bottom: 1rem;
+      margin-bottom: 1.2rem;
       color: white;
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       flex-shrink: 0;
+      border-radius: 28px;
+      transition: all 0.2s;
+    }
+    .mobile-menu-btn:hover {
+      background: #ffffff;
+      color: #000;
+      border-color: #fff;
     }
     .flasher-card {
-      background: #0c0c0c;
-      padding: 1.5rem;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+      background: rgba(10, 10, 16, 0.65);
+      backdrop-filter: blur(14px);
+      border-radius: 44px;
+      padding: 1.8rem;
+      box-shadow: 0 25px 45px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
       display: flex;
       flex-direction: column;
       flex: 1;
       min-height: 0;
+      border: 1px solid rgba(255,255,255,0.08);
     }
     h3 {
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-      font-weight: 500;
+      font-size: 1.6rem;
+      font-weight: 600;
+      margin-bottom: 1.4rem;
       flex-shrink: 0;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff, #c0c0ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.65rem;
-      background: transparent;
-      border: 1.5px solid #ffffff;
+      gap: 0.8rem;
+      background: rgba(0,0,0,0.5);
+      border: 1.2px solid rgba(255,255,255,0.7);
       color: #ffffff;
       font-family: 'Inter', sans-serif;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 0.9rem;
-      padding: 0.7rem 1.2rem;
+      padding: 0.8rem 1.8rem;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      letter-spacing: 0.3px;
-      background-color: transparent;
-      border-radius: 0px;
+      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      letter-spacing: 0.4px;
+      border-radius: 80px;
+      backdrop-filter: blur(4px);
       align-self: flex-start;
       flex-shrink: 0;
     }
     .btn i {
       font-size: 1rem;
-      color: #ffffff;
-      transition: color 0.2s;
+      transition: transform 0.2s;
     }
     .btn:hover {
-      background-color: #ffffff;
+      background: #ffffff;
       color: #000000;
       border-color: #ffffff;
+      box-shadow: 0 8px 24px rgba(255,255,255,0.2);
+      transform: scale(1.02);
     }
     .btn:hover i {
       color: #000000;
+      transform: translateX(3px);
     }
     .port-section {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.8rem;
-      margin-bottom: 1.5rem;
-      background: #050505;
-      padding: 0.8rem;
-      border-left: 3px solid #2c2c2c;
+      gap: 1rem;
+      margin-bottom: 1.8rem;
+      background: rgba(5,5,10,0.5);
+      padding: 0.8rem 1.2rem;
+      border-radius: 48px;
+      border: 1px solid rgba(255,255,255,0.08);
       flex-shrink: 0;
+      backdrop-filter: blur(8px);
     }
     .port-status {
-      font-size: 0.75rem;
-      font-family: monospace;
-      background: #0f0f0f;
-      padding: 0.4rem 0.8rem;
-      border: 1px solid #2a2a2a;
-      color: #dddddd;
+      font-size: 0.8rem;
+      font-weight: 500;
+      font-family: 'Inter', monospace;
+      background: rgba(16,16,24,0.7);
+      padding: 0.5rem 1rem;
+      border-radius: 42px;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e0e0ff;
       flex: 1;
       word-break: break-all;
     }
     .active-fw-indicator {
-      background: #0a0a0a;
-      padding: 0.6rem 1rem;
-      margin-bottom: 1.5rem;
-      border-left: 3px solid #ffffff;
-      font-size: 0.75rem;
+      background: rgba(15,15,25,0.7);
+      backdrop-filter: blur(8px);
+      padding: 0.8rem 1.2rem;
+      margin-bottom: 1.8rem;
+      border-radius: 32px;
+      border-left: 4px solid #ffffff;
+      font-weight: 500;
+      font-size: 0.85rem;
       flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .log-terminal {
-      background: #030303;
-      border: 1px solid #252525;
-      padding: 0.8rem;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.7rem;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px;
+      padding: 1rem;
+      font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
       margin-top: 1.5rem;
       flex: 1;
-      min-height: 0;
+      min-height: 180px;
       overflow-y: auto;
+      line-height: 1.45;
     }
     .log-line {
-      padding: 0.2rem 0;
-      border-bottom: 1px dotted #1e1e1e;
+      padding: 0.25rem 0.4rem;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
       display: flex;
       gap: 0.7rem;
+      align-items: baseline;
     }
     .log-prefix {
-      color: #9e9e9e;
+      color: #b0b0ff;
+      font-weight: 600;
     }
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+      filter: grayscale(0.1);
+      transform: none;
     }
     @media (max-width: 768px) {
       .mobile-menu-btn {
@@ -294,52 +363,60 @@
         height: 100%;
         transform: translateX(-100%);
         z-index: 1000;
-        width: 260px;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        width: 280px;
+        border-radius: 0 28px 28px 0;
       }
       .sidebar.open {
         transform: translateX(0);
       }
       .main-content {
         padding: 1rem;
-        padding-top: 0.5rem;
+        padding-top: 0.8rem;
       }
       .flasher-card {
-        padding: 1.2rem;
+        padding: 1.3rem;
+        border-radius: 36px;
       }
       .port-section {
         flex-direction: column;
         align-items: stretch;
+        border-radius: 38px;
       }
       .btn {
         justify-content: center;
         align-self: stretch;
       }
       .splash-logo {
-        width: 150px;
+        width: 160px;
       }
     }
     ::-webkit-scrollbar {
-      width: 4px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
-      background: #111;
+      background: #0f0f1a;
+      border-radius: 8px;
     }
     ::-webkit-scrollbar-thumb {
-      background: #444;
+      background: #3a3a4e;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aaaaff;
     }
   </style>
 </head>
 <body>
 <div class="splash" id="splash">
   <img src="Logo.png" alt="Logo" class="splash-logo">
-  <div class="splash-text">Loading libraries...</div>
+  <div class="splash-text">Initializing quantum core...</div>
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="app-wrapper" id="appWrapper">
   <div class="sidebar" id="sidebar">
-    <h2><i class="fas fa-microchip"></i> Firmware library</h2>
+    <h2><i class="fas fa-microchip"></i> Firmware Vault</h2>
     <div class="search-wrapper">
       <div class="search-box">
         <i class="fas fa-search"></i>
@@ -350,23 +427,23 @@
   </div>
 
   <div class="main-content">
-    <button class="mobile-menu-btn" id="menuToggleBtn"><i class="fas fa-bars"></i></button>
+    <button class="mobile-menu-btn" id="menuToggleBtn"><i class="fas fa-bars-staggered"></i></button>
 
     <div class="flasher-card">
-      <h3><i class="fas fa-satellite-dish"></i> Flash interface</h3>
+      <h3><i class="fas fa-bolt"></i> Flash Station</h3>
       <div class="port-section">
-        <button id="selectPortBtn" class="btn"><i class="fas fa-plug"></i> Select port</button>
-        <span id="portStatus" class="port-status"><i class="fas fa-circle-notch"></i> No port selected</span>
+        <button id="selectPortBtn" class="btn"><i class="fas fa-usb"></i> Select port</button>
+        <span id="portStatus" class="port-status"><i class="fas fa-plug"></i> No port selected</span>
       </div>
 
       <div id="activeFirmwareDisplay" class="active-fw-indicator">
-        <i class="fas fa-info-circle"></i> No firmware selected
+        <i class="fas fa-microchip"></i> No firmware selected
       </div>
 
-      <button id="flashActionBtn" class="btn" disabled><i class="fas fa-bolt"></i> FLASH FIRMWARE</button>
+      <button id="flashActionBtn" class="btn" disabled><i class="fas fa-satellite-dish"></i> FLASH FIRMWARE</button>
 
       <div class="log-terminal" id="logTerminal">
-        <div class="log-line"><span class="log-prefix">></span><span class="log-text">System ready — waiting for serial connection</span></div>
+        <div class="log-line"><span class="log-prefix">⤷</span><span class="log-text">System online — ready for connection</span></div>
       </div>
     </div>
   </div>
@@ -419,10 +496,10 @@
     div.className = 'log-line';
     const prefix = document.createElement('span');
     prefix.className = 'log-prefix';
-    prefix.innerText = '>';
+    prefix.innerText = '⤷';
     const text = document.createElement('span');
     text.className = 'log-text';
-    if (type === 'error') text.style.color = '#ff9e9e';
+    if (type === 'error') text.style.color = '#ffaeae';
     if (type === 'success') text.style.fontWeight = '500';
     text.innerText = safeMsg;
     div.appendChild(prefix);
@@ -543,7 +620,7 @@
     currentFirmwareCacheKey = manifestPath;
     
     const size = currentAppData.length;
-    activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${currentFirmwareName} (${(size/1024).toFixed(2)} KB)`;
+    activeFirmwareDisplay.innerHTML = `<i class="fas fa-bolt"></i> ${currentFirmwareName}  (${(size/1024).toFixed(2)} KB) — ready to flash`;
     addLog(`Selected: ${currentFirmwareName}`, "success");
     
     document.querySelectorAll('.fw-item').forEach(el => {
@@ -570,14 +647,14 @@
       const name = info.usbProductName || info.friendlyName || 'Serial device';
       const vid = info.usbVendorId || '?';
       const pid = info.usbProductId || '?';
-      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Port selected: ${name} (${vid}:${pid})`;
+      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Active: ${name} (${vid}:${pid})`;
       addLog(`Port selected: ${name}`, "success");
       if (currentAppData) flashBtn.disabled = false;
       else flashBtn.disabled = true;
     } catch(err) {
       addLog(`Port selection error: ${err.message}`, "error");
       selectedPort = null;
-      portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
+      portStatusSpan.innerHTML = `<i class="fas fa-plug"></i> No port selected`;
       flashBtn.disabled = true;
     }
   }
@@ -747,7 +824,7 @@
     }
     if (splash) splash.style.display = 'none';
     if (appWrapper) appWrapper.style.display = 'flex';
-    addLog("WebFlasher ready. Select firmware from library, then choose port and flash.", "info");
+    addLog("WebFlasher ready. Select firmware from library, choose port, then flash.", "info");
   }
 
   boot();
