@@ -18,7 +18,7 @@
       -ms-user-select: none;
     }
     body {
-      background: radial-gradient(ellipse at 30% 40%, #0a0c12 0%, #000000 100%);
+      background: radial-gradient(circle at 20% 30%, #0a0a0a, #000000);
       font-family: 'Inter', sans-serif;
       color: #ffffff;
       line-height: 1.5;
@@ -31,35 +31,35 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: #000000;
+      background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 100%);
       z-index: 10000;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      backdrop-filter: blur(20px);
-      transition: opacity 0.5s ease-out;
+      backdrop-filter: blur(2px);
+      transition: opacity 0.5s ease;
     }
     .splash-logo {
-      width: 220px;
+      width: 200px;
       height: auto;
-      filter: drop-shadow(0 0 25px rgba(255,255,255,0.3)) drop-shadow(0 0 8px rgba(0,255,255,0.4));
-      animation: gentlePulse 1.8s infinite alternate;
+      filter: drop-shadow(0 0 25px rgba(0, 255, 255, 0.4)) brightness(1.1);
+      animation: pulseGlow 1.8s infinite alternate;
       margin-bottom: 2rem;
     }
-    @keyframes gentlePulse {
-      0% { opacity: 0.7; transform: scale(0.98); filter: drop-shadow(0 0 15px rgba(255,255,255,0.2));}
-      100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 35px rgba(0,255,255,0.5));}
+    @keyframes pulseGlow {
+      0% { filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.3)); transform: scale(0.98);}
+      100% { filter: drop-shadow(0 0 28px rgba(0, 212, 255, 0.7)); transform: scale(1.02);}
     }
     .splash-text {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 400;
-      letter-spacing: 2px;
-      background: linear-gradient(135deg, #aaa, #fff);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #dddddd, #aaaaaa);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      text-transform: uppercase;
     }
     .sidebar-overlay {
       position: fixed;
@@ -67,11 +67,11 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(6px);
       z-index: 998;
       display: none;
-      transition: all 0.3s ease;
+      transition: opacity 0.2s;
     }
     .sidebar-overlay.active {
       display: block;
@@ -84,27 +84,27 @@
     }
     .sidebar {
       width: 300px;
-      background: rgba(8, 8, 14, 0.75);
-      backdrop-filter: blur(16px);
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 2rem 1rem;
+      background: rgba(8, 8, 12, 0.92);
+      backdrop-filter: blur(14px);
+      border-right: 1px solid rgba(66, 66, 88, 0.4);
+      padding: 2rem 1.2rem;
       flex-shrink: 0;
-      transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
       z-index: 999;
       overflow-y: auto;
-      box-shadow: 12px 0 35px rgba(0,0,0,0.4);
+      box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6);
     }
     .sidebar h2 {
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       font-weight: 600;
       letter-spacing: -0.3px;
       margin-bottom: 1.5rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid rgba(100, 100, 140, 0.5);
       display: flex;
       align-items: center;
       gap: 12px;
-      background: linear-gradient(120deg, #ffffff, #aaaaff);
+      background: linear-gradient(120deg, #fff, #8cb2ff);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
@@ -112,7 +112,7 @@
     .search-wrapper {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 1.8rem;
+      margin-bottom: 2rem;
       align-items: center;
     }
     .search-box {
@@ -124,28 +124,28 @@
       left: 14px;
       top: 50%;
       transform: translateY(-50%);
-      color: #aaa;
+      color: #888cff;
       font-size: 0.9rem;
-      transition: color 0.2s;
+      pointer-events: none;
     }
     .search-box input {
       width: 100%;
-      background: rgba(20, 20, 28, 0.7);
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 0 1rem 0 2.4rem;
-      color: white;
+      background: rgba(20, 20, 30, 0.7);
+      border: 1px solid rgba(90, 90, 130, 0.6);
+      padding: 0 0.8rem 0 2.2rem;
+      color: #f0f0ff;
       font-family: 'Inter', sans-serif;
       font-size: 0.85rem;
       outline: none;
       height: 44px;
-      border-radius: 18px;
-      backdrop-filter: blur(4px);
-      transition: all 0.2s ease;
+      border-radius: 14px;
+      transition: all 0.2s;
+      font-weight: 500;
     }
     .search-box input:focus {
-      border-color: #ffffff;
-      background: rgba(28, 28, 36, 0.9);
-      box-shadow: 0 0 12px rgba(255,255,255,0.1);
+      border-color: #6c6eff;
+      box-shadow: 0 0 12px rgba(108, 110, 255, 0.3);
+      background: rgba(10, 10, 20, 0.9);
     }
     .firmware-list {
       display: flex;
@@ -153,30 +153,30 @@
       gap: 1rem;
     }
     .fw-item {
-      background: rgba(12, 12, 18, 0.7);
+      background: rgba(18, 18, 28, 0.7);
       backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.05);
+      border: 1px solid rgba(70, 70, 110, 0.5);
       padding: 1rem 1.2rem;
-      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.4, 1);
+      border-radius: 20px;
+      transition: all 0.25s ease;
       cursor: pointer;
-      border-radius: 24px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
     .fw-item:hover {
-      border-color: rgba(255,255,255,0.35);
-      background: rgba(28, 28, 38, 0.8);
-      transform: translateX(6px) scale(1.01);
+      transform: translateX(6px);
+      border-color: #8e92ff;
+      background: rgba(30, 30, 50, 0.9);
+      box-shadow: -4px 6px 18px rgba(0, 0, 0, 0.5);
     }
     .fw-item.active {
-      border-left: 3px solid #ffffff;
-      background: linear-gradient(135deg, rgba(40,40,55,0.9), rgba(20,20,32,0.9));
-      border-color: #ffffff rgba(255,255,255,0.2) rgba(255,255,255,0.1) #ffffff;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+      border-left: 4px solid #6c6eff;
+      background: linear-gradient(135deg, rgba(40, 40, 70, 0.9), rgba(25, 25, 45, 0.95));
+      box-shadow: 0 0 14px rgba(108, 110, 255, 0.3);
+      border-radius: 20px;
     }
     .fw-name {
       font-weight: 700;
       font-size: 1rem;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -184,13 +184,13 @@
     }
     .fw-name i {
       font-size: 0.9rem;
-      color: #ffffff;
-      opacity: 0.8;
+      color: #a0a6ff;
     }
     .fw-desc {
       font-size: 0.7rem;
-      color: #bcbcbc;
-      line-height: 1.35;
+      color: #b9b9e6;
+      line-height: 1.4;
+      font-weight: 400;
     }
     .main-content {
       flex: 1;
@@ -200,12 +200,13 @@
       flex-direction: column;
       min-width: 0;
       overflow-y: auto;
+      background: radial-gradient(ellipse at 70% 20%, rgba(20, 20, 35, 0.2), transparent);
     }
     .mobile-menu-btn {
       display: none;
-      background: rgba(20,20,28,0.8);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(15, 15, 25, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(110, 110, 200, 0.7);
       width: 48px;
       height: 48px;
       align-items: center;
@@ -215,56 +216,55 @@
       color: white;
       font-size: 1.5rem;
       flex-shrink: 0;
-      border-radius: 28px;
-      transition: all 0.2s;
+      border-radius: 20px;
+      transition: 0.2s;
     }
     .mobile-menu-btn:hover {
-      background: #ffffff;
-      color: #000;
-      border-color: #fff;
+      background: rgba(80, 80, 140, 0.5);
+      border-color: #aaaaff;
     }
     .flasher-card {
-      background: rgba(10, 10, 16, 0.65);
+      background: rgba(12, 12, 20, 0.65);
       backdrop-filter: blur(14px);
-      border-radius: 44px;
+      border-radius: 36px;
       padding: 1.8rem;
-      box-shadow: 0 25px 45px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(110, 110, 160, 0.25);
       display: flex;
       flex-direction: column;
       flex: 1;
       min-height: 0;
-      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.2s;
     }
     h3 {
-      font-size: 1.6rem;
-      font-weight: 600;
+      font-size: 1.4rem;
       margin-bottom: 1.4rem;
+      font-weight: 600;
       flex-shrink: 0;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #ffffff, #c0c0ff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
       display: flex;
       align-items: center;
       gap: 12px;
+      background: linear-gradient(135deg, #ffffff, #c0c4ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.8rem;
-      background: rgba(0,0,0,0.5);
-      border: 1.2px solid rgba(255,255,255,0.7);
-      color: #ffffff;
+      gap: 0.75rem;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1.2px solid rgba(160, 160, 255, 0.8);
+      color: #f5f5ff;
       font-family: 'Inter', sans-serif;
       font-weight: 600;
       font-size: 0.9rem;
-      padding: 0.8rem 1.8rem;
+      padding: 0.75rem 1.5rem;
       cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-      letter-spacing: 0.4px;
-      border-radius: 80px;
+      transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+      letter-spacing: 0.3px;
+      border-radius: 40px;
       backdrop-filter: blur(4px);
       align-self: flex-start;
       flex-shrink: 0;
@@ -275,82 +275,81 @@
     }
     .btn:hover {
       background: #ffffff;
-      color: #000000;
+      color: #0a0a1a;
       border-color: #ffffff;
-      box-shadow: 0 8px 24px rgba(255,255,255,0.2);
-      transform: scale(1.02);
+      box-shadow: 0 6px 20px rgba(100, 100, 255, 0.4);
+      transform: translateY(-2px);
     }
     .btn:hover i {
-      color: #000000;
-      transform: translateX(3px);
+      color: #0a0a1a;
+      transform: scale(1.05);
     }
     .port-section {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 1rem;
-      margin-bottom: 1.8rem;
-      background: rgba(5,5,10,0.5);
-      padding: 0.8rem 1.2rem;
-      border-radius: 48px;
-      border: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 1.5rem;
+      background: rgba(6, 6, 12, 0.6);
+      padding: 1rem 1.2rem;
+      border-radius: 28px;
+      border: 1px solid rgba(90, 90, 140, 0.4);
       flex-shrink: 0;
-      backdrop-filter: blur(8px);
     }
     .port-status {
       font-size: 0.8rem;
-      font-weight: 500;
       font-family: 'Inter', monospace;
-      background: rgba(16,16,24,0.7);
+      background: rgba(0, 0, 0, 0.5);
       padding: 0.5rem 1rem;
-      border-radius: 42px;
-      border: 1px solid rgba(255,255,255,0.1);
-      color: #e0e0ff;
+      border-radius: 40px;
+      border: 1px solid rgba(108, 110, 200, 0.5);
+      color: #ddddff;
       flex: 1;
       word-break: break-all;
+      letter-spacing: 0.2px;
     }
     .active-fw-indicator {
-      background: rgba(15,15,25,0.7);
-      backdrop-filter: blur(8px);
+      background: rgba(20, 25, 45, 0.8);
       padding: 0.8rem 1.2rem;
-      margin-bottom: 1.8rem;
-      border-radius: 32px;
-      border-left: 4px solid #ffffff;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #6c6eff;
+      border-radius: 24px;
+      font-size: 0.8rem;
       font-weight: 500;
-      font-size: 0.85rem;
+      backdrop-filter: blur(5px);
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     .log-terminal {
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 28px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(80, 80, 130, 0.6);
+      border-radius: 24px;
       padding: 1rem;
       font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       margin-top: 1.5rem;
       flex: 1;
-      min-height: 180px;
+      min-height: 0;
       overflow-y: auto;
-      line-height: 1.45;
+      line-height: 1.5;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6);
     }
     .log-line {
-      padding: 0.25rem 0.4rem;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+      padding: 0.25rem 0;
+      border-bottom: 1px solid rgba(75, 75, 110, 0.25);
       display: flex;
-      gap: 0.7rem;
-      align-items: baseline;
+      gap: 0.8rem;
+      font-size: 0.7rem;
     }
     .log-prefix {
-      color: #b0b0ff;
+      color: #8e9eff;
       font-weight: 600;
     }
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
-      filter: grayscale(0.1);
       transform: none;
+      filter: grayscale(0.1);
     }
     @media (max-width: 768px) {
       .mobile-menu-btn {
@@ -371,52 +370,50 @@
       }
       .main-content {
         padding: 1rem;
-        padding-top: 0.8rem;
+        padding-top: 0.5rem;
       }
       .flasher-card {
-        padding: 1.3rem;
-        border-radius: 36px;
+        padding: 1.2rem;
+        border-radius: 28px;
       }
       .port-section {
         flex-direction: column;
         align-items: stretch;
-        border-radius: 38px;
       }
       .btn {
         justify-content: center;
         align-self: stretch;
       }
       .splash-logo {
-        width: 160px;
+        width: 150px;
       }
     }
     ::-webkit-scrollbar {
       width: 5px;
-      height: 5px;
     }
     ::-webkit-scrollbar-track {
-      background: #0f0f1a;
-      border-radius: 8px;
+      background: rgba(20, 20, 30, 0.6);
+      border-radius: 10px;
     }
     ::-webkit-scrollbar-thumb {
-      background: #3a3a4e;
-      border-radius: 8px;
+      background: #6c6eff;
+      border-radius: 10px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #aaaaff;
+      background: #a0a6ff;
     }
   </style>
 </head>
 <body>
 <div class="splash" id="splash">
   <img src="Logo.png" alt="Logo" class="splash-logo">
-  <div class="splash-text">Initializing quantum core...</div>
+  <div class="splash-text">INITIALIZING CORE MODULES</div>
 </div>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="app-wrapper" id="appWrapper">
   <div class="sidebar" id="sidebar">
-    <h2><i class="fas fa-microchip"></i> Firmware Vault</h2>
+    <h2><i class="fas fa-microchip"></i> FIRMWARE VAULT</h2>
     <div class="search-wrapper">
       <div class="search-box">
         <i class="fas fa-search"></i>
@@ -427,23 +424,23 @@
   </div>
 
   <div class="main-content">
-    <button class="mobile-menu-btn" id="menuToggleBtn"><i class="fas fa-bars-staggered"></i></button>
+    <button class="mobile-menu-btn" id="menuToggleBtn"><i class="fas fa-bolt"></i></button>
 
     <div class="flasher-card">
-      <h3><i class="fas fa-bolt"></i> Flash Station</h3>
+      <h3><i class="fas fa-satellite-dish"></i> FLASH CONTROLLER</h3>
       <div class="port-section">
-        <button id="selectPortBtn" class="btn"><i class="fas fa-usb"></i> Select port</button>
-        <span id="portStatus" class="port-status"><i class="fas fa-plug"></i> No port selected</span>
+        <button id="selectPortBtn" class="btn"><i class="fas fa-plug"></i> SELECT PORT</button>
+        <span id="portStatus" class="port-status"><i class="fas fa-circle-notch"></i> No port selected</span>
       </div>
 
       <div id="activeFirmwareDisplay" class="active-fw-indicator">
-        <i class="fas fa-microchip"></i> No firmware selected
+        <i class="fas fa-info-circle"></i> No firmware selected
       </div>
 
-      <button id="flashActionBtn" class="btn" disabled><i class="fas fa-satellite-dish"></i> FLASH FIRMWARE</button>
+      <button id="flashActionBtn" class="btn" disabled><i class="fas fa-bolt"></i> EXECUTE FLASH</button>
 
       <div class="log-terminal" id="logTerminal">
-        <div class="log-line"><span class="log-prefix">⤷</span><span class="log-text">System online — ready for connection</span></div>
+        <div class="log-line"><span class="log-prefix">></span><span class="log-text">System ready — waiting for serial connection</span></div>
       </div>
     </div>
   </div>
@@ -496,11 +493,11 @@
     div.className = 'log-line';
     const prefix = document.createElement('span');
     prefix.className = 'log-prefix';
-    prefix.innerText = '⤷';
+    prefix.innerText = '>';
     const text = document.createElement('span');
     text.className = 'log-text';
-    if (type === 'error') text.style.color = '#ffaeae';
-    if (type === 'success') text.style.fontWeight = '500';
+    if (type === 'error') text.style.color = '#ff9999';
+    if (type === 'success') text.style.fontWeight = '600';
     text.innerText = safeMsg;
     div.appendChild(prefix);
     div.appendChild(text);
@@ -620,7 +617,7 @@
     currentFirmwareCacheKey = manifestPath;
     
     const size = currentAppData.length;
-    activeFirmwareDisplay.innerHTML = `<i class="fas fa-bolt"></i> ${currentFirmwareName}  (${(size/1024).toFixed(2)} KB) — ready to flash`;
+    activeFirmwareDisplay.innerHTML = `<i class="fas fa-check-circle"></i> ${currentFirmwareName} (${(size/1024).toFixed(2)} KB)`;
     addLog(`Selected: ${currentFirmwareName}`, "success");
     
     document.querySelectorAll('.fw-item').forEach(el => {
@@ -647,14 +644,14 @@
       const name = info.usbProductName || info.friendlyName || 'Serial device';
       const vid = info.usbVendorId || '?';
       const pid = info.usbProductId || '?';
-      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Active: ${name} (${vid}:${pid})`;
+      portStatusSpan.innerHTML = `<i class="fas fa-check-circle"></i> Port selected: ${name} (${vid}:${pid})`;
       addLog(`Port selected: ${name}`, "success");
       if (currentAppData) flashBtn.disabled = false;
       else flashBtn.disabled = true;
     } catch(err) {
       addLog(`Port selection error: ${err.message}`, "error");
       selectedPort = null;
-      portStatusSpan.innerHTML = `<i class="fas fa-plug"></i> No port selected`;
+      portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
       flashBtn.disabled = true;
     }
   }
@@ -824,7 +821,7 @@
     }
     if (splash) splash.style.display = 'none';
     if (appWrapper) appWrapper.style.display = 'flex';
-    addLog("WebFlasher ready. Select firmware from library, choose port, then flash.", "info");
+    addLog("WebFlasher ready. Select firmware from library, then choose port and flash.", "info");
   }
 
   boot();
