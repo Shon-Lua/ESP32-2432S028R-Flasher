@@ -32,12 +32,29 @@
     }
 
     body {
-      background: radial-gradient(circle at 30% 10%, #0a0a1a, #010105);
+      background: #020010;
       font-family: 'Inter', sans-serif;
       color: #ffffff;
       line-height: 1.5;
       overflow: hidden;
       height: calc(var(--vh, 1vh) * 100);
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 30% 40%, rgba(60, 60, 160, 0.25), transparent 55%),
+                  radial-gradient(circle at 70% 20%, rgba(20, 150, 210, 0.15), transparent 50%);
+      animation: bgDrift 18s infinite alternate ease-in-out;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes bgDrift {
+      0% { transform: translate(0%, 0%) scale(1); opacity: 0.9; }
+      100% { transform: translate(-2%, 2%) scale(1.02); opacity: 1; }
     }
 
     .splash {
@@ -110,6 +127,12 @@
 
     .sidebar-overlay.active {
       display: block;
+      animation: fadeInOverlay 0.25s ease;
+    }
+
+    @keyframes fadeInOverlay {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     .app-wrapper {
@@ -117,6 +140,7 @@
       height: 100%;
       overflow: hidden;
       position: relative;
+      z-index: 1;
     }
 
     .sidebar {
@@ -126,7 +150,7 @@
       border-right: 1px solid rgba(80, 100, 200, 0.5);
       padding: 2rem 1.2rem;
       flex-shrink: 0;
-      transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+      transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2), box-shadow 0.35s;
       z-index: 999;
       overflow-y: auto;
       box-shadow: 12px 0 48px rgba(0, 0, 0, 0.5);
@@ -168,6 +192,7 @@
       color: #8c8eff;
       font-size: 1rem;
       pointer-events: none;
+      transition: color 0.3s;
     }
 
     .search-box input {
@@ -187,8 +212,13 @@
 
     .search-box input:focus {
       border-color: #6c6eff;
-      box-shadow: 0 0 18px var(--glow-purple);
+      box-shadow: 0 0 24px var(--glow-purple), inset 0 0 10px rgba(108, 110, 255, 0.15);
       background: rgba(8, 8, 20, 0.95);
+    }
+
+    .search-box input:focus + i,
+    .search-box input:focus ~ i {
+      color: #b5b9ff;
     }
 
     .firmware-list {
@@ -207,6 +237,14 @@
       cursor: pointer;
       position: relative;
       overflow: hidden;
+      opacity: 0;
+      animation: fadeInUp 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+      animation-fill-mode: forwards;
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(12px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
     .fw-item::before {
@@ -243,6 +281,11 @@
       font-size: 1rem;
       color: #aab2ff;
       filter: drop-shadow(0 0 4px cyan);
+      transition: transform 0.2s;
+    }
+
+    .fw-item:hover .fw-name i {
+      transform: scale(1.1) rotate(3deg);
     }
 
     .fw-desc {
@@ -280,6 +323,14 @@
       border-radius: 28px;
       transition: var(--transition-smooth);
       box-shadow: 0 0 12px rgba(100, 100, 255, 0.4);
+    }
+
+    .mobile-menu-btn i {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mobile-menu-btn:active i {
+      transform: rotate(90deg) scale(1.2);
     }
 
     .flasher-card {
@@ -385,6 +436,7 @@
       flex: 1;
       word-break: break-all;
       font-weight: 500;
+      transition: all 0.3s;
     }
 
     .active-fw-indicator {
@@ -398,6 +450,26 @@
       backdrop-filter: blur(10px);
       flex-shrink: 0;
       box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .active-fw-indicator::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(108, 110, 255, 0.08), transparent);
+      animation: indicatorShine 4s infinite;
+    }
+
+    @keyframes indicatorShine {
+      0% { left: -100%; }
+      50% { left: 100%; }
+      100% { left: 100%; }
     }
 
     .log-terminal {
@@ -444,6 +516,12 @@
       color: #6c6eff;
       font-weight: 700;
       text-shadow: 0 0 3px cyan;
+      animation: pulsePrefix 1.5s infinite;
+    }
+
+    @keyframes pulsePrefix {
+      0%, 100% { text-shadow: 0 0 3px cyan; }
+      50% { text-shadow: 0 0 8px cyan; }
     }
 
     button:disabled {
@@ -469,7 +547,7 @@
         transform: translateX(8px) scale(1.02);
         border-color: #a0a8ff;
         background: rgba(40, 40, 75, 0.95);
-        box-shadow: -6px 10px 22px rgba(0, 0, 0, 0.6);
+        box-shadow: -6px 10px 22px rgba(0, 0, 0, 0.6), 0 0 18px rgba(108, 110, 255, 0.2);
       }
       .mobile-menu-btn:hover {
         background: rgba(80, 100, 200, 0.7);
@@ -494,6 +572,7 @@
       }
       .sidebar.open {
         transform: translateX(0);
+        box-shadow: 8px 0 32px rgba(108, 110, 255, 0.25);
       }
       .main-content {
         padding: 1rem;
@@ -917,17 +996,18 @@
         firmwareListContainer.appendChild(emptyMsg);
         return;
       }
-      for (const folderName of folderNames) {
+      folderNames.forEach((folderName, index) => {
         const manifestPath = `Lib/${folderName}/manifest.json`;
         const fwDiv = document.createElement('div');
         fwDiv.className = 'fw-item';
         fwDiv.setAttribute('data-manifest', manifestPath);
+        fwDiv.style.animationDelay = (index * 0.05) + 's';
         fwDiv.innerHTML = `
           <div class="fw-name">${folderName} <i class="fas fa-microchip"></i></div>
           <div class="fw-desc">Loading description...</div>
         `;
         firmwareListContainer.appendChild(fwDiv);
-      }
+      });
     } catch (err) {
       addLog(`Failed to load projects.json: ${err.message}`, "error");
       const errorDiv = document.createElement('div');
