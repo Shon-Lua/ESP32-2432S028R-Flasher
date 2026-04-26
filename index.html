@@ -312,12 +312,28 @@
       border: 1px solid rgba(100, 110, 190, 0.55);
       padding: 1rem 1.2rem;
       border-radius: 28px;
-      margin-bottom: 1rem;
+      transition: all 0.3s cubic-bezier(0.22, 0.9, 0.35, 1.1);
       cursor: pointer;
       position: relative;
       overflow: hidden;
+      margin-bottom: 1rem;
       max-height: 500px;
-      transition: max-height 0.45s ease, opacity 0.35s ease, padding 0.35s, margin-bottom 0.35s, border-width 0.35s;
+    }
+
+    .fw-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .fw-item.hidden {
+      opacity: 0;
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border-width: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transform: scale(0.95);
     }
 
     .fw-item::before {
@@ -341,14 +357,9 @@
       animation: activeGlow 2s infinite alternate;
     }
 
-    .fw-item.hidden {
-      max-height: 0;
-      opacity: 0;
-      padding-top: 0;
-      padding-bottom: 0;
-      margin-bottom: 0;
-      border-width: 0;
-      pointer-events: none;
+    .fw-item.hidden.active {
+      animation: none;
+      border-left-width: 0;
     }
 
     @keyframes activeGlow {
@@ -709,6 +720,12 @@
         background: rgba(40, 40, 80, 0.95);
         box-shadow: -6px 12px 26px rgba(0, 0, 0, 0.7);
       }
+      .fw-item.hidden:hover {
+        transform: scale(0.95);
+        border-color: transparent;
+        background: rgba(18, 18, 36, 0.7);
+        box-shadow: none;
+      }
       .mobile-menu-btn:hover {
         background: rgba(90, 110, 210, 0.8);
         border-color: #fff;
@@ -918,19 +935,10 @@
         show = false;
       }
       if (show) {
-        const nameEl = item.querySelector('.fw-name');
-        let name = '';
-        if (nameEl) {
-          const textNode = nameEl.childNodes[0];
-          name = textNode ? textNode.textContent.trim() : '';
-        }
+        let name = item.querySelector('.fw-name')?.innerText?.split(' ')[0] || '';
         if (!name.toLowerCase().includes(term)) show = false;
       }
-      if (show) {
-        item.classList.remove('hidden');
-      } else {
-        item.classList.add('hidden');
-      }
+      item.classList.toggle('hidden', !show);
     });
   }
 
@@ -1308,6 +1316,7 @@
       item.addEventListener('click', async (e) => {
         if (e.target.classList.contains('fav-icon')) return;
         if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
+        if (item.classList.contains('hidden')) return;
         await selectFirmwareFromCache(manifestPath);
         if (window.innerWidth <= 768) closeSidebar();
       });
