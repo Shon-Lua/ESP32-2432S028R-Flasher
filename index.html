@@ -304,31 +304,19 @@
     .firmware-list {
       display: flex;
       flex-direction: column;
+      gap: 1rem;
     }
 
     .fw-item {
       background: rgba(18, 18, 36, 0.7);
       backdrop-filter: blur(10px);
-      border-width: 1px;
-      border-style: solid;
-      border-color: rgba(100, 110, 190, 0.55);
+      border: 1px solid rgba(100, 110, 190, 0.55);
       padding: 1rem 1.2rem;
       border-radius: 28px;
-      transition: opacity 0.4s ease, max-height 0.4s ease, margin-bottom 0.4s ease, padding 0.4s ease, border-width 0.4s ease;
+      transition: all 0.3s cubic-bezier(0.22, 0.9, 0.35, 1.1);
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      max-height: 1000px;
-      opacity: 1;
-      margin-bottom: 1rem;
-    }
-
-    .fw-item.hidden-card {
-      opacity: 0;
-      max-height: 0;
-      margin-bottom: 0;
-      padding: 0;
-      border-width: 0;
     }
 
     .fw-item::before {
@@ -345,8 +333,7 @@
     }
 
     .fw-item.active {
-      border-left-width: 5px;
-      border-left-color: #6c6eff;
+      border-left: 5px solid #6c6eff;
       background: linear-gradient(135deg, rgba(45, 45, 90, 0.95), rgba(20, 20, 60, 0.98));
       box-shadow: 0 0 28px rgba(108, 110, 255, 0.55), inset 0 1px 0 rgba(255,255,255,0.12);
       transform: scale(1.01);
@@ -923,11 +910,7 @@
         let name = item.querySelector('.fw-name')?.innerText?.split(' ')[0] || '';
         if (!name.toLowerCase().includes(term)) show = false;
       }
-      if (show) {
-        item.classList.remove('hidden-card');
-      } else {
-        item.classList.add('hidden-card');
-      }
+      item.style.display = show ? '' : 'none';
     });
   }
 
@@ -1317,9 +1300,7 @@
       }
     });
     
-    requestAnimationFrame(() => {
-      applyFilters();
-    });
+    applyFilters();
   }
 
   async function preloadResources() {
