@@ -127,13 +127,17 @@
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(14px);
       z-index: 1001;
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
     }
 
     .category-modal-overlay.active {
-      display: flex;
+      opacity: 1;
+      visibility: visible;
     }
 
     .category-modal {
@@ -147,12 +151,14 @@
       display: flex;
       flex-direction: column;
       gap: 1.2rem;
-      animation: modalPop 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+      transform: scale(0.9);
+      opacity: 0;
+      transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.2), opacity 0.25s ease;
     }
 
-    @keyframes modalPop {
-      0% { transform: scale(0.92); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    .category-modal-overlay.active .category-modal {
+      transform: scale(1);
+      opacity: 1;
     }
 
     .category-modal button {
@@ -764,8 +770,8 @@
 
 <div class="category-modal-overlay" id="categoryModalOverlay">
   <div class="category-modal">
-    <button id="categoryAllBtn"><i class="fas fa-globe"></i> Все</button>
-    <button id="categoryFavoritesBtn"><i class="fas fa-heart"></i> Любимое</button>
+    <button id="categoryAllBtn"><i class="fas fa-globe"></i> All</button>
+    <button id="categoryFavoritesBtn"><i class="fas fa-heart"></i> Favorites</button>
   </div>
 </div>
 
