@@ -70,6 +70,7 @@
       filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.8)) brightness(1.2);
       animation: cosmicPulse 2s infinite alternate ease-in-out, logoFloat 3s infinite ease-in-out;
       margin-bottom: 2rem;
+      transition: transform 0.3s;
     }
 
     @keyframes cosmicPulse {
@@ -110,6 +111,7 @@
       backdrop-filter: blur(16px);
       z-index: 998;
       display: none;
+      transition: opacity 0.3s;
     }
 
     .sidebar-overlay.active {
@@ -269,6 +271,7 @@
       color: #a09eff;
       font-size: 1rem;
       pointer-events: none;
+      transition: color 0.3s;
     }
 
     .search-box input {
@@ -284,6 +287,7 @@
       border-radius: 30px;
       transition: var(--transition-smooth);
       font-weight: 500;
+      letter-spacing: 0.2px;
     }
 
     .search-box input:focus {
@@ -536,6 +540,7 @@
       border: 1px solid rgba(100, 110, 200, 0.7);
       flex-shrink: 0;
       backdrop-filter: blur(8px);
+      transition: border-color 0.3s;
     }
 
     .port-section:focus-within {
@@ -592,6 +597,7 @@
       align-items: center;
       gap: 1rem;
       flex-shrink: 0;
+      transition: all 0.3s;
     }
 
     .progress-track {
@@ -636,6 +642,7 @@
       min-width: 45px;
       text-align: right;
       text-shadow: 0 0 6px rgba(120,140,255,0.8);
+      letter-spacing: 0.3px;
     }
 
     .log-terminal {
@@ -684,20 +691,6 @@
       transform: none;
       filter: grayscale(0.3);
       box-shadow: none;
-    }
-
-    @media (pointer: coarse) {
-      .fw-item:active, .fav-icon:active, .category-btn:active, .category-modal button:active,
-      .fw-item:focus, .fav-icon:focus, .category-btn:focus, .category-modal button:focus,
-      .btn:active, .btn:focus {
-        outline: none;
-        background: inherit;
-        transform: none;
-        box-shadow: none;
-      }
-      .fw-item.active:active {
-        background: linear-gradient(135deg, rgba(45, 45, 90, 0.95), rgba(20, 20, 60, 0.98));
-      }
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -916,7 +909,6 @@
     if (currentCategory === 'favorites') {
       applyFilters();
     }
-    if (iconElement) iconElement.blur();
   }
 
   function applyFilters() {
@@ -953,8 +945,8 @@
   function closeCategoryModal() { categoryModalOverlay.classList.remove('active'); }
   categoryBtn.addEventListener('click', openCategoryModal);
   categoryModalOverlay.addEventListener('click', (e) => { if (e.target === categoryModalOverlay) closeCategoryModal(); });
-  categoryAllBtn.addEventListener('click', () => { currentCategory = 'all'; closeCategoryModal(); applyFilters(); categoryAllBtn.blur(); });
-  categoryFavoritesBtn.addEventListener('click', () => { currentCategory = 'favorites'; closeCategoryModal(); applyFilters(); categoryFavoritesBtn.blur(); });
+  categoryAllBtn.addEventListener('click', () => { currentCategory = 'all'; closeCategoryModal(); applyFilters(); });
+  categoryFavoritesBtn.addEventListener('click', () => { currentCategory = 'favorites'; closeCategoryModal(); applyFilters(); });
 
   function addLog(msg, type='info') {
     const safeMsg = String(msg === undefined || msg === null ? '' : msg);
@@ -1129,7 +1121,6 @@
       addLog(`Port selected: ${name}`, "success");
       if (currentAppData) flashBtn.disabled = false;
       else flashBtn.disabled = true;
-      selectPortBtn.blur();
     } catch(err) {
       addLog(`Port selection error: ${err.message}`, "error");
       selectedPort = null;
@@ -1312,7 +1303,6 @@
         if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
         if (item.classList.contains('hidden')) return;
         await selectFirmwareFromCache(manifestPath);
-        item.blur();
         if (window.innerWidth <= 768) closeSidebar();
       });
       const favIcon = item.querySelector('.fav-icon');
@@ -1343,13 +1333,6 @@
   flashBtn.addEventListener('click', startFlashing);
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
-
-  document.body.addEventListener('touchend', (e) => {
-    const active = document.activeElement;
-    if (active && active !== document.body && active !== document.documentElement && !['INPUT', 'TEXTAREA'].includes(active.tagName) && !active.isContentEditable) {
-      active.blur();
-    }
-  });
 
   async function boot() {
     try {
