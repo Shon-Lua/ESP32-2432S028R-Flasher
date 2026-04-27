@@ -813,7 +813,7 @@
       </div>
 
       <div id="activeFirmwareDisplay" class="active-fw-indicator">
-        <i class="fas fa-info-circle"></i> No firmware selected
+        <i class="fas fa-minus-circle"></i> No firmware selected
       </div>
 
       <div class="progress-container" id="progressContainer" style="display: none;">
@@ -911,6 +911,15 @@
     }
   }
 
+  function updateCategoryButtonIcon() {
+    const icon = categoryBtn.querySelector('i');
+    if (currentCategory === 'favorites') {
+      icon.className = 'fas fa-heart';
+    } else {
+      icon.className = 'fas fa-layer-group';
+    }
+  }
+
   function applyFilters() {
     const term = searchInput.value.toLowerCase();
     document.querySelectorAll('.fw-item[data-manifest]').forEach(item => {
@@ -945,8 +954,8 @@
   function closeCategoryModal() { categoryModalOverlay.classList.remove('active'); }
   categoryBtn.addEventListener('click', openCategoryModal);
   categoryModalOverlay.addEventListener('click', (e) => { if (e.target === categoryModalOverlay) closeCategoryModal(); });
-  categoryAllBtn.addEventListener('click', () => { currentCategory = 'all'; closeCategoryModal(); applyFilters(); });
-  categoryFavoritesBtn.addEventListener('click', () => { currentCategory = 'favorites'; closeCategoryModal(); applyFilters(); });
+  categoryAllBtn.addEventListener('click', () => { currentCategory = 'all'; updateCategoryButtonIcon(); closeCategoryModal(); applyFilters(); });
+  categoryFavoritesBtn.addEventListener('click', () => { currentCategory = 'favorites'; updateCategoryButtonIcon(); closeCategoryModal(); applyFilters(); });
 
   function addLog(msg, type='info') {
     const safeMsg = String(msg === undefined || msg === null ? '' : msg);
@@ -1348,6 +1357,7 @@
     }, 500);
   }
 
+  updateCategoryButtonIcon();
   boot();
 </script>
 </body>
