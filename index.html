@@ -18,6 +18,7 @@
       -ms-user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
+
     :root {
       --glow-cyan: rgba(0, 255, 255, 0.7);
       --glow-purple: rgba(108, 110, 255, 0.9);
@@ -25,10 +26,12 @@
       --border-glow: 0 0 14px rgba(108, 110, 255, 0.5);
       --transition-smooth: all 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2);
     }
+
     html, body {
       height: 100%;
       background: #020108;
     }
+
     body {
       font-family: 'Inter', sans-serif;
       color: #ffffff;
@@ -37,6 +40,7 @@
       height: calc(var(--vh, 1vh) * 100);
       background: radial-gradient(ellipse at 30% 10%, #0d0d2b 0%, #020105 70%);
     }
+
     .splash {
       position: fixed;
       top: 0;
@@ -54,26 +58,30 @@
       opacity: 1;
       pointer-events: auto;
     }
+
     .splash.hidden {
       opacity: 0;
       pointer-events: none;
     }
+
     .splash-logo {
       width: 200px;
       height: auto;
       filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.8)) brightness(1.2);
       animation: cosmicPulse 2s infinite alternate ease-in-out, logoFloat 3s infinite ease-in-out;
       margin-bottom: 2rem;
-      transition: transform 0.3s;
     }
+
     @keyframes cosmicPulse {
       0% { filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.6)); transform: scale(0.96); }
       100% { filter: drop-shadow(0 0 44px rgba(0, 212, 255, 0.95)); transform: scale(1.04); }
     }
+
     @keyframes logoFloat {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-6px); }
     }
+
     .splash-text {
       font-size: 0.9rem;
       font-weight: 500;
@@ -85,11 +93,13 @@
       color: transparent;
       animation: textPulse 2.2s infinite;
     }
+
     @keyframes textPulse {
       0% { opacity: 0.7; letter-spacing: 5px; text-shadow: 0 0 6px rgba(0, 255, 255, 0.5); }
       50% { opacity: 1; letter-spacing: 6.5px; text-shadow: 0 0 14px cyan; }
       100% { opacity: 0.7; letter-spacing: 5px; text-shadow: 0 0 6px rgba(0, 255, 255, 0.5); }
     }
+
     .sidebar-overlay {
       position: fixed;
       top: 0;
@@ -100,11 +110,12 @@
       backdrop-filter: blur(16px);
       z-index: 998;
       display: none;
-      transition: opacity 0.3s;
     }
+
     .sidebar-overlay.active {
       display: block;
     }
+
     .category-modal-overlay {
       position: fixed;
       top: 0;
@@ -121,10 +132,12 @@
       visibility: hidden;
       transition: opacity 0.3s ease, visibility 0.3s ease;
     }
+
     .category-modal-overlay.active {
       opacity: 1;
       visibility: visible;
     }
+
     .category-modal {
       background: rgba(10, 10, 30, 0.95);
       backdrop-filter: blur(28px);
@@ -140,10 +153,12 @@
       opacity: 0;
       transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.2), opacity 0.25s ease;
     }
+
     .category-modal-overlay.active .category-modal {
       transform: scale(1);
       opacity: 1;
     }
+
     .category-modal button {
       background: rgba(20, 20, 45, 0.8);
       border: 1px solid rgba(130, 140, 255, 0.8);
@@ -160,21 +175,25 @@
       align-items: center;
       gap: 0.7rem;
     }
+
     .category-modal button:hover {
       background: rgba(80, 100, 210, 0.7);
       border-color: #ffffff;
       color: white;
       box-shadow: 0 0 20px rgba(110, 130, 255, 0.7);
     }
+
     .category-modal button i {
       font-size: 1.1rem;
     }
+
     .app-wrapper {
       display: none;
       height: 100%;
       overflow: hidden;
       position: relative;
     }
+
     .sidebar {
       width: 300px;
       background: rgba(4, 4, 16, 0.94);
@@ -187,6 +206,7 @@
       overflow-y: auto;
       box-shadow: 18px 0 50px rgba(0, 0, 0, 0.6);
     }
+
     .sidebar h2 {
       font-size: 1.4rem;
       font-weight: 700;
@@ -203,12 +223,14 @@
       color: transparent;
       text-shadow: 0 0 8px rgba(140, 140, 255, 0.4);
     }
+
     .search-wrapper {
       display: flex;
       gap: 0.6rem;
       margin-bottom: 2rem;
       align-items: center;
     }
+
     .category-btn {
       background: rgba(18, 18, 38, 0.8);
       border: 1.5px solid rgba(100, 110, 220, 0.7);
@@ -225,6 +247,7 @@
       backdrop-filter: blur(6px);
       flex-shrink: 0;
     }
+
     .category-btn:hover {
       background: rgba(90, 100, 200, 0.8);
       border-color: #ffffff;
@@ -232,10 +255,12 @@
       box-shadow: 0 0 18px rgba(110, 120, 255, 0.7);
       transform: scale(1.04);
     }
+
     .search-box {
       flex: 1;
       position: relative;
     }
+
     .search-box i {
       position: absolute;
       left: 14px;
@@ -244,8 +269,8 @@
       color: #a09eff;
       font-size: 1rem;
       pointer-events: none;
-      transition: color 0.3s;
     }
+
     .search-box input {
       width: 100%;
       background: rgba(22, 22, 40, 0.85);
@@ -259,21 +284,24 @@
       border-radius: 30px;
       transition: var(--transition-smooth);
       font-weight: 500;
-      letter-spacing: 0.2px;
     }
+
     .search-box input:focus {
       border-color: #6c6eff;
       box-shadow: 0 0 20px var(--glow-purple);
       background: rgba(8, 8, 24, 0.95);
     }
+
     .search-box input:focus + i,
     .search-box input:focus ~ i {
       color: #ffffff;
     }
+
     .firmware-list {
       display: flex;
       flex-direction: column;
     }
+
     .fw-item {
       background: rgba(18, 18, 36, 0.7);
       backdrop-filter: blur(10px);
@@ -286,13 +314,16 @@
       overflow: hidden;
       margin-bottom: 1rem;
     }
+
     .fw-item:last-child {
       margin-bottom: 0;
     }
+
     .fw-item.hidden {
       opacity: 0;
       pointer-events: none;
     }
+
     .fw-item::before {
       content: '';
       position: absolute;
@@ -301,9 +332,11 @@
       transform: translateX(-100%);
       transition: transform 0.7s;
     }
+
     .fw-item:hover::before {
       transform: translateX(100%);
     }
+
     .fw-item.active {
       border-left: 5px solid #6c6eff;
       background: linear-gradient(135deg, rgba(45, 45, 90, 0.95), rgba(20, 20, 60, 0.98));
@@ -311,13 +344,16 @@
       transform: scale(1.01);
       animation: activeGlow 2s infinite alternate;
     }
+
     .fw-item.hidden.active {
       animation: none;
     }
+
     @keyframes activeGlow {
       0% { box-shadow: 0 0 20px rgba(108, 110, 255, 0.4); }
       100% { box-shadow: 0 0 34px rgba(130, 140, 255, 0.7); }
     }
+
     .fw-name {
       font-weight: 800;
       font-size: 1rem;
@@ -327,6 +363,7 @@
       align-items: center;
       letter-spacing: -0.2px;
     }
+
     .fw-name .fav-icon {
       font-size: 1.1rem;
       color: #bbc2ff;
@@ -335,16 +372,19 @@
       transition: transform 0.25s, color 0.2s;
       z-index: 2;
     }
+
     .fw-name .fav-icon:hover {
       transform: scale(1.3);
       color: #ff6b81;
     }
+
     .fw-desc {
       font-size: 0.72rem;
       color: #cdd0ff;
       line-height: 1.4;
       font-weight: 400;
     }
+
     .main-content {
       flex: 1;
       padding: 1.8rem;
@@ -356,6 +396,7 @@
       background: radial-gradient(ellipse at 70% 20%, rgba(30, 30, 70, 0.25), transparent 70%);
       position: relative;
     }
+
     .mobile-menu-btn {
       display: none;
       background: rgba(15, 15, 35, 0.9);
@@ -375,11 +416,13 @@
       box-shadow: 0 0 14px rgba(100, 100, 255, 0.5);
       animation: subtlePulse 2.5s infinite;
     }
+
     @keyframes subtlePulse {
       0% { box-shadow: 0 0 10px rgba(100, 100, 255, 0.3); }
       50% { box-shadow: 0 0 24px rgba(130, 140, 255, 0.8); }
       100% { box-shadow: 0 0 10px rgba(100, 100, 255, 0.3); }
     }
+
     .flasher-card {
       background: var(--glass-bg);
       backdrop-filter: blur(24px);
@@ -395,6 +438,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .flasher-card::after {
       content: '';
       position: absolute;
@@ -406,11 +450,13 @@
       pointer-events: none;
       animation: cardGradientMove 8s infinite linear;
     }
+
     @keyframes cardGradientMove {
       0% { transform: rotate(0deg); opacity: 0.3; }
       50% { opacity: 0.7; }
       100% { transform: rotate(360deg); opacity: 0.3; }
     }
+
     h3 {
       font-size: 1.5rem;
       margin-bottom: 1.6rem;
@@ -425,6 +471,7 @@
       color: transparent;
       text-shadow: 0 0 6px rgba(120, 120, 255, 0.5);
     }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -448,6 +495,7 @@
       overflow: hidden;
       box-shadow: 0 4px 14px rgba(0,0,0,0.4);
     }
+
     .btn::after {
       content: '';
       position: absolute;
@@ -460,18 +508,22 @@
       transform: translate(-50%, -50%);
       transition: width 0.6s, height 0.6s, opacity 0.4s;
     }
+
     .btn:active::after {
       width: 300px;
       height: 300px;
       opacity: 0;
     }
+
     .btn i {
       font-size: 1rem;
       transition: transform 0.25s;
     }
+
     .btn:active {
       transform: scale(0.96);
     }
+
     .port-section {
       display: flex;
       flex-wrap: wrap;
@@ -484,12 +536,13 @@
       border: 1px solid rgba(100, 110, 200, 0.7);
       flex-shrink: 0;
       backdrop-filter: blur(8px);
-      transition: border-color 0.3s;
     }
+
     .port-section:focus-within {
       border-color: #a0a8ff;
       box-shadow: 0 0 16px rgba(108, 110, 255, 0.4);
     }
+
     .port-status {
       font-size: 0.8rem;
       font-family: 'Inter', monospace;
@@ -505,6 +558,7 @@
       align-items: center;
       gap: 0.4rem;
     }
+
     .active-fw-indicator {
       background: linear-gradient(95deg, rgba(25, 30, 68, 0.92), rgba(15, 20, 50, 0.92));
       padding: 0.9rem 1.4rem;
@@ -521,10 +575,12 @@
       gap: 0.5rem;
       animation: indicatorBorderPulse 3s infinite alternate;
     }
+
     @keyframes indicatorBorderPulse {
       0% { border-left-color: #6c6eff; }
       100% { border-left-color: #b0baff; }
     }
+
     .progress-container {
       background: rgba(0, 0, 0, 0.45);
       backdrop-filter: blur(12px);
@@ -536,8 +592,8 @@
       align-items: center;
       gap: 1rem;
       flex-shrink: 0;
-      transition: all 0.3s;
     }
+
     .progress-track {
       flex: 1;
       height: 0.6rem;
@@ -546,6 +602,7 @@
       overflow: hidden;
       box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
     }
+
     .progress-fill {
       width: 0%;
       height: 100%;
@@ -555,6 +612,7 @@
       transition: width 0.25s ease-out;
       position: relative;
     }
+
     .progress-fill::after {
       content: '';
       position: absolute;
@@ -565,10 +623,12 @@
       background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
       animation: progressShine 1.2s infinite linear;
     }
+
     @keyframes progressShine {
       0% { transform: translateX(-100%); }
       100% { transform: translateX(100%); }
     }
+
     .progress-text {
       font-weight: 700;
       font-size: 0.85rem;
@@ -576,8 +636,8 @@
       min-width: 45px;
       text-align: right;
       text-shadow: 0 0 6px rgba(120,140,255,0.8);
-      letter-spacing: 0.3px;
     }
+
     .log-terminal {
       background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(18px);
@@ -594,6 +654,7 @@
       box-shadow: inset 0 0 22px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.3);
       clip-path: inset(0 0 0 0 round 28px);
     }
+
     .log-line {
       padding: 0.3rem 0;
       border-bottom: 1px solid rgba(100, 110, 180, 0.25);
@@ -605,15 +666,18 @@
       transform: translateY(6px);
       animation: logSlideFade 0.22s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
     }
+
     @keyframes logSlideFade {
       0% { opacity: 0; transform: translateY(8px); }
       100% { opacity: 1; transform: translateY(0); }
     }
+
     .log-prefix {
       color: #8a8eff;
       font-weight: 700;
       text-shadow: 0 0 4px cyan;
     }
+
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
@@ -621,6 +685,21 @@
       filter: grayscale(0.3);
       box-shadow: none;
     }
+
+    @media (pointer: coarse) {
+      .fw-item:active, .fav-icon:active, .category-btn:active, .category-modal button:active,
+      .fw-item:focus, .fav-icon:focus, .category-btn:focus, .category-modal button:focus,
+      .btn:active, .btn:focus {
+        outline: none;
+        background: inherit;
+        transform: none;
+        box-shadow: none;
+      }
+      .fw-item.active:active {
+        background: linear-gradient(135deg, rgba(45, 45, 90, 0.95), rgba(20, 20, 60, 0.98));
+      }
+    }
+
     @media (hover: hover) and (pointer: fine) {
       .btn:hover {
         background: #ffffff;
@@ -646,6 +725,7 @@
         box-shadow: 0 0 28px rgba(130, 150, 255, 0.9);
       }
     }
+
     @media (max-width: 768px) {
       .mobile-menu-btn {
         display: flex;
@@ -684,6 +764,7 @@
         width: 150px;
       }
     }
+
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -706,12 +787,14 @@
   <img src="Logo.png" alt="Logo" class="splash-logo">
   <div class="splash-text">INITIALIZING CORE MODULES</div>
 </div>
+
 <div class="category-modal-overlay" id="categoryModalOverlay">
   <div class="category-modal">
     <button id="categoryAllBtn"><i class="fas fa-globe"></i> All</button>
     <button id="categoryFavoritesBtn"><i class="fas fa-heart"></i> Favorites</button>
   </div>
 </div>
+
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="app-wrapper" id="appWrapper">
   <div class="sidebar" id="sidebar">
@@ -725,28 +808,36 @@
     </div>
     <div class="firmware-list" id="firmwareListContainer"></div>
   </div>
+
   <div class="main-content">
     <button class="mobile-menu-btn" id="menuToggleBtn"><i class="fas fa-bolt"></i></button>
+
     <div class="flasher-card">
       <h3><i class="fas fa-satellite-dish"></i> FLASH CONTROLLER</h3>
       <div class="port-section">
         <button id="selectPortBtn" class="btn"><i class="fas fa-plug"></i> SELECT PORT</button>
         <span id="portStatus" class="port-status"><i class="fas fa-circle-notch"></i> No port selected</span>
       </div>
+
       <div id="activeFirmwareDisplay" class="active-fw-indicator">
         <i class="fas fa-info-circle"></i> No firmware selected
       </div>
+
       <div class="progress-container" id="progressContainer" style="display: none;">
         <div class="progress-track">
           <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
         </div>
         <span class="progress-text" id="progressText">0%</span>
       </div>
+
       <button id="flashActionBtn" class="btn" disabled><i class="fas fa-bolt"></i> EXECUTE FLASH</button>
-      <div class="log-terminal" id="logTerminal"></div>
+
+      <div class="log-terminal" id="logTerminal">
+      </div>
     </div>
   </div>
 </div>
+
 <script type="importmap">
   {
     "imports": {
@@ -754,6 +845,7 @@
     }
   }
 </script>
+
 <script type="module">
   import * as esptoolModule from 'esptool-js';
   const { ESPLoader, Transport } = esptoolModule;
@@ -790,12 +882,6 @@
   const categoryAllBtn = document.getElementById('categoryAllBtn');
   const categoryFavoritesBtn = document.getElementById('categoryFavoritesBtn');
 
-  function blurActive() {
-    if (document.activeElement && document.activeElement.blur) {
-      document.activeElement.blur();
-    }
-  }
-
   function saveFavorites() {
     localStorage.setItem('firmwareFavorites', JSON.stringify([...favorites]));
   }
@@ -830,8 +916,7 @@
     if (currentCategory === 'favorites') {
       applyFilters();
     }
-    iconElement.blur();
-    blurActive();
+    if (iconElement) iconElement.blur();
   }
 
   function applyFilters() {
@@ -860,17 +945,16 @@
 
   function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
   function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
-  menuToggle.addEventListener('click', (e) => { e.stopPropagation(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); blurActive(); });
+  menuToggle.addEventListener('click', (e) => { e.stopPropagation(); if (sidebar.classList.contains('open')) closeSidebar(); else openSidebar(); });
   overlay.addEventListener('click', closeSidebar);
   window.addEventListener('resize', () => { if (window.innerWidth > 768) closeSidebar(); });
 
   function openCategoryModal() { categoryModalOverlay.classList.add('active'); }
   function closeCategoryModal() { categoryModalOverlay.classList.remove('active'); }
-  categoryBtn.addEventListener('click', () => { openCategoryModal(); categoryBtn.blur(); blurActive(); });
+  categoryBtn.addEventListener('click', openCategoryModal);
   categoryModalOverlay.addEventListener('click', (e) => { if (e.target === categoryModalOverlay) closeCategoryModal(); });
-  
-  categoryAllBtn.addEventListener('click', (e) => { currentCategory = 'all'; closeCategoryModal(); applyFilters(); e.target.blur(); blurActive(); });
-  categoryFavoritesBtn.addEventListener('click', (e) => { currentCategory = 'favorites'; closeCategoryModal(); applyFilters(); e.target.blur(); blurActive(); });
+  categoryAllBtn.addEventListener('click', () => { currentCategory = 'all'; closeCategoryModal(); applyFilters(); categoryAllBtn.blur(); });
+  categoryFavoritesBtn.addEventListener('click', () => { currentCategory = 'favorites'; closeCategoryModal(); applyFilters(); categoryFavoritesBtn.blur(); });
 
   function addLog(msg, type='info') {
     const safeMsg = String(msg === undefined || msg === null ? '' : msg);
@@ -1045,13 +1129,12 @@
       addLog(`Port selected: ${name}`, "success");
       if (currentAppData) flashBtn.disabled = false;
       else flashBtn.disabled = true;
-      blurActive();
+      selectPortBtn.blur();
     } catch(err) {
       addLog(`Port selection error: ${err.message}`, "error");
       selectedPort = null;
       portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
       flashBtn.disabled = true;
-      blurActive();
     }
   }
 
@@ -1173,7 +1256,6 @@
         progressContainer.style.display = 'none';
       }, 1200);
       if (!success) addLog("Flashing failed, please retry. Consider manual power cycle.", "error");
-      blurActive();
     }
   }
 
@@ -1230,8 +1312,8 @@
         if (flashingInProgress) { addLog("Cannot change firmware while flashing", "error"); return; }
         if (item.classList.contains('hidden')) return;
         await selectFirmwareFromCache(manifestPath);
+        item.blur();
         if (window.innerWidth <= 768) closeSidebar();
-        blurActive();
       });
       const favIcon = item.querySelector('.fav-icon');
       if (favIcon) {
@@ -1257,10 +1339,17 @@
   }
 
   searchInput.addEventListener('input', applyFilters);
-  selectPortBtn.addEventListener('click', () => { selectSerialPort(); });
-  flashBtn.addEventListener('click', () => { startFlashing(); });
+  selectPortBtn.addEventListener('click', selectSerialPort);
+  flashBtn.addEventListener('click', startFlashing);
 
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
+
+  document.body.addEventListener('touchend', (e) => {
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== document.documentElement && !['INPUT', 'TEXTAREA'].includes(active.tagName) && !active.isContentEditable) {
+      active.blur();
+    }
+  });
 
   async function boot() {
     try {
