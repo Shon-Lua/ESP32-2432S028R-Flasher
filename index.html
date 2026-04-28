@@ -312,11 +312,12 @@
       border: 1px solid rgba(100, 110, 190, 0.55);
       padding: 1rem 1.2rem;
       border-radius: 28px;
-      transition: all 0.3s cubic-bezier(0.22, 0.9, 0.35, 1.1);
+      transition: max-height 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.2), padding 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2), margin 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.2), opacity 0.3s ease, border-width 0.2s ease;
       cursor: pointer;
       position: relative;
       overflow: hidden;
       margin-bottom: 1rem;
+      max-height: 260px;
     }
 
     .fw-item:last-child {
@@ -324,6 +325,11 @@
     }
 
     .fw-item.hidden {
+      max-height: 0 !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      margin-bottom: 0 !important;
+      border-width: 0 !important;
       opacity: 0;
       pointer-events: none;
     }
