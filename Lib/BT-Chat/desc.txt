@@ -1,0 +1,2 @@
+A Bluetooth messenger that supports scrolling through chats, saving them, and using special characters on the keyboard.
+Board: ESP32-2432S028R

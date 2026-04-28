@@ -1,0 +1,11 @@
+{
+  "name": "BT-Chat",
+  "type": "full",
+  "basePath": "Lib/BT-Chat/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "BT-Chat.bin",
+    "desc": "desc.txt"
+  }
+}
