@@ -5,7 +5,7 @@
   "files": {
     "bootloader": "bootloader.bin",
     "partitions": "partitions.bin",
-    "app": "Snake_Snake!.bin",
+    "app": "ESP_Snake!.bin",
     "desc": "desc.txt"
   }
 }
