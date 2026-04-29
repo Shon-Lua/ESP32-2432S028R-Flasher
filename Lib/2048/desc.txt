@@ -1,0 +1,2 @@
+Classic 2048 game. Swipe for action.
+Board: ESP32-2432S028R

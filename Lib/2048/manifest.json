@@ -1,0 +1,11 @@
+{
+  "name": "2048",
+  "type": "full",
+  "basePath": "Lib/2048/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "2048.bin",
+    "desc": "desc.txt"
+  }
+}
