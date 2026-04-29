@@ -1,0 +1,11 @@
+{
+  "name": "ESP Snake!",
+  "type": "full",
+  "basePath": "Lib/ESP Snake!/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "Snake_Snake!.bin",
+    "desc": "desc.txt"
+  }
+}
