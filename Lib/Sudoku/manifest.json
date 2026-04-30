@@ -1,0 +1,11 @@
+{
+  "name": "Sudoku",
+  "type": "full",
+  "basePath": "Lib/Sudoku/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "Sudoku.bin",
+    "desc": "desc.txt"
+  }
+}

@@ -1,0 +1,2 @@
+A classic sudoku game. Click on 'OK' to check if you answered correctly and 'R' to reset game.
+Board: ESP32-2432S028R
