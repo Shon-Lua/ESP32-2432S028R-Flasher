@@ -1,0 +1,2 @@
+Just a tic-Tac-Toe.
+Board: ESP32-2432S028R

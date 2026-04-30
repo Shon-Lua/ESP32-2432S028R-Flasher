@@ -1,0 +1,11 @@
+{
+  "name": "Tic-Tac-Toe",
+  "type": "full",
+  "basePath": "Lib/Tic-Tac-Toe/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "Tic-Tac-Toe.bin",
+    "desc": "desc.txt"
+  }
+}
