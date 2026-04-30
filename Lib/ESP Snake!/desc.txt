@@ -1,2 +1,2 @@
-Classic snake game for ESP! Swipe for control and click 'GO!' to start.
+A classic snake game for ESP! Swipe for control and click 'GO!' to start.
 Board: ESP32-2432S028R
