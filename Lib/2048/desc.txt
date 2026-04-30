@@ -1,2 +1,2 @@
-A classic 2048 game. Swipe for action.
+A classic 2048 game. Swipe for action. Once you've filled in the field, the game will restart automatically.
 Board: ESP32-2432S028R
