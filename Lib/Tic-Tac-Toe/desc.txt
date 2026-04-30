@@ -1,2 +1,2 @@
-Just a tic-Tac-Toe.
+Just a Tic-Tac-Toe.
 Board: ESP32-2432S028R
