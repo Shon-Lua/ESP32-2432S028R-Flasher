@@ -1,11 +1,11 @@
 {
-  "name": "Flcok3",
+  "name": "Flock3",
   "type": "full",
   "basePath": "Lib/Flock3/",
   "files": {
     "bootloader": "bootloader.bin",
     "partitions": "partitions.bin",
-    "app": "Flcok3.bin",
+    "app": "Flock3.bin",
     "desc": "desc.txt"
   }
 }
