@@ -1,7 +1,7 @@
 {
   "name": "Flcok3",
   "type": "full",
-  "basePath": "Lib/Flcok3/",
+  "basePath": "Lib/Flock3/",
   "files": {
     "bootloader": "bootloader.bin",
     "partitions": "partitions.bin",
