@@ -1,0 +1,2 @@
+Flock3 player is a player that supports MP3 and WAV formats.
+Board: ESP32-2432S028R

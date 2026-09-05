@@ -1,0 +1,11 @@
+{
+  "name": "Flcok3",
+  "type": "full",
+  "basePath": "Lib/Flcok2/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "Flcok3.bin",
+    "desc": "desc.txt"
+  }
+}
