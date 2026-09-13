@@ -1,0 +1,2 @@
+This is a horror game set in a labyrinth where a monster named Render Demon32 stalks you. You need to find a key to open the door and complete all the levels.
+Board: ESP32-2432S028R

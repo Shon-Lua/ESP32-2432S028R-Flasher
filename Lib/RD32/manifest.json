@@ -1,0 +1,11 @@
+{
+  "name": "RD32",
+  "type": "full",
+  "basePath": "Lib/RD32/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "RD32.bin",
+    "desc": "desc.txt"
+  }
+}
