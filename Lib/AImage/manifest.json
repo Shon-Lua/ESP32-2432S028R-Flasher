@@ -1,0 +1,11 @@
+{
+  "name": "AImage",
+  "type": "full",
+  "basePath": "Lib/AImage/",
+  "files": {
+    "bootloader": "bootloader.bin",
+    "partitions": "partitions.bin",
+    "app": "AImage.bin",
+    "desc": "desc.txt"
+  }
+}

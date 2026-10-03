@@ -1,0 +1,2 @@
+This is firmware that is capable of generating AI images and displaying them simultaneously on a website and on a screen. It can be used as a photo frame for decoration.
+Board: ESP32-2432S028R
