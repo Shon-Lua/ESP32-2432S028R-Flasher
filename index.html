@@ -68,37 +68,36 @@
       width: 200px;
       height: auto;
       filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.8)) brightness(1.2);
-      animation: cosmicPulse 2s infinite alternate ease-in-out, logoFloat 3s infinite ease-in-out;
       margin-bottom: 2rem;
-      transition: transform 0.3s;
     }
 
-    @keyframes cosmicPulse {
-      0% { filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.6)); transform: scale(0.96); }
-      100% { filter: drop-shadow(0 0 44px rgba(0, 212, 255, 0.95)); transform: scale(1.04); }
-    }
-
-    @keyframes logoFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .splash-text {
+    .mobile-block-message {
+      display: none;
+      max-width: 320px;
+      margin-top: 1rem;
+      padding: 1rem 1.4rem;
+      text-align: center;
       font-size: 0.9rem;
       font-weight: 500;
-      letter-spacing: 5px;
-      text-transform: uppercase;
-      background: linear-gradient(135deg, #e0e0ff, #9d9dff);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      animation: textPulse 2.2s infinite;
+      letter-spacing: 0.3px;
+      line-height: 1.5;
+      color: #e4e6ff;
+      background: rgba(10, 10, 30, 0.85);
+      border: 1px solid rgba(130, 140, 255, 0.7);
+      border-radius: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 24px rgba(108, 110, 255, 0.45);
     }
 
-    @keyframes textPulse {
-      0% { opacity: 0.7; letter-spacing: 5px; text-shadow: 0 0 6px rgba(0, 255, 255, 0.5); }
-      50% { opacity: 1; letter-spacing: 6.5px; text-shadow: 0 0 14px cyan; }
-      100% { opacity: 0.7; letter-spacing: 5px; text-shadow: 0 0 6px rgba(0, 255, 255, 0.5); }
+    .mobile-block-message i {
+      display: block;
+      font-size: 1.6rem;
+      margin-bottom: 0.6rem;
+      color: #8a8eff;
+    }
+
+    .splash.mobile-block .mobile-block-message {
+      display: block;
     }
 
     .sidebar-overlay {
@@ -345,16 +344,6 @@
       background: linear-gradient(135deg, rgba(45, 45, 90, 0.95), rgba(20, 20, 60, 0.98));
       box-shadow: 0 0 28px rgba(108, 110, 255, 0.55), inset 0 1px 0 rgba(255,255,255,0.12);
       transform: scale(1.01);
-      animation: activeGlow 2s infinite alternate;
-    }
-
-    .fw-item.hidden.active {
-      animation: none;
-    }
-
-    @keyframes activeGlow {
-      0% { box-shadow: 0 0 20px rgba(108, 110, 255, 0.4); }
-      100% { box-shadow: 0 0 34px rgba(130, 140, 255, 0.7); }
     }
 
     .fw-name {
@@ -417,13 +406,6 @@
       border-radius: 28px;
       transition: var(--transition-smooth);
       box-shadow: 0 0 14px rgba(100, 100, 255, 0.5);
-      animation: subtlePulse 2.5s infinite;
-    }
-
-    @keyframes subtlePulse {
-      0% { box-shadow: 0 0 10px rgba(100, 100, 255, 0.3); }
-      50% { box-shadow: 0 0 24px rgba(130, 140, 255, 0.8); }
-      100% { box-shadow: 0 0 10px rgba(100, 100, 255, 0.3); }
     }
 
     .flasher-card {
@@ -577,12 +559,6 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      animation: indicatorBorderPulse 3s infinite alternate;
-    }
-
-    @keyframes indicatorBorderPulse {
-      0% { border-left-color: #6c6eff; }
-      100% { border-left-color: #b0baff; }
     }
 
     .progress-container {
@@ -778,7 +754,10 @@
 <body>
 <div class="splash" id="splash">
   <img src="Logo.png" alt="Logo" class="splash-logo">
-  <div class="splash-text">INITIALIZING CORE MODULES</div>
+  <div class="mobile-block-message" id="mobileBlockMessage">
+    <i class="fas fa-triangle-exclamation"></i>
+    This application is not supported on mobile devices. Please open it on a desktop or laptop computer.
+  </div>
 </div>
 
 <div class="category-modal-overlay" id="categoryModalOverlay">
@@ -874,6 +853,18 @@
   const categoryModalOverlay = document.getElementById('categoryModalOverlay');
   const categoryAllBtn = document.getElementById('categoryAllBtn');
   const categoryFavoritesBtn = document.getElementById('categoryFavoritesBtn');
+
+  function isMobileHardware() {
+    if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
+      return navigator.userAgentData.mobile;
+    }
+    const ua = navigator.userAgent || navigator.vendor || window.opera || '';
+    const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|BB10|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+    const touchPoints = (navigator.maxTouchPoints || navigator.msMaxTouchPoints || 0);
+    const looksLikeTablet = /iPad|Tablet|PlayBook|Silk/i.test(ua) && touchPoints > 1;
+    const looksLikePhone = mobileRegex.test(ua);
+    return looksLikePhone || looksLikeTablet;
+  }
 
   function saveFavorites() {
     localStorage.setItem('firmwareFavorites', JSON.stringify([...favorites]));
@@ -1197,7 +1188,7 @@
       
       await esptoolInstance.main();
       addLog("Connected to ESP device", "success");
-      await esptoolInstance.eraseFlash();      
+      await esptoolInstance.eraseFlash();       
       const fileArray = [];
       
       if (currentBootloaderData && currentBootloaderData.length > 0) {
@@ -1344,6 +1335,10 @@
   if (!('serial' in navigator)) { addLog("Web Serial API unavailable", "error"); selectPortBtn.disabled = true; }
 
   async function boot() {
+    if (isMobileHardware()) {
+      splash.classList.add('mobile-block');
+      return;
+    }
     try {
       await preloadResources();
     } catch (err) {
