@@ -788,7 +788,7 @@
       <h3><i class="fas fa-satellite-dish"></i> FLASH CONTROLLER</h3>
       <div class="port-section">
         <button id="selectPortBtn" class="btn"><i class="fas fa-plug"></i> SELECT PORT</button>
-        <span id="portStatus" class="port-status"><i class="fas fa-circle-notch"></i> No port selected</span>
+        <span id="portStatus" class="port-status"><i class="fas fa-exclamation-circle"></i> No port selected</span>
       </div>
 
       <div id="activeFirmwareDisplay" class="active-fw-indicator">
@@ -1124,7 +1124,7 @@
     } catch(err) {
       addLog(`Port selection error: ${err.message}`, "error");
       selectedPort = null;
-      portStatusSpan.innerHTML = `<i class="fas fa-circle-notch"></i> No port selected`;
+      portStatusSpan.innerHTML = `<i class="fas fa-exclamation-circle"></i> No port selected`;
       flashBtn.disabled = true;
     }
   }
